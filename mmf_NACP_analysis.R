@@ -13,7 +13,8 @@ se <- function(x){
 
 core.data <- read.csv("Core_data_DOE_summer_2014.csv", na.strings=c("", "NA", "#VALUE!", "*"), header=T)
 #adding a column include which plot at the site the trees belong to
-core.data$plot <- substr(core.data$PlotID, 3, 3)
+names(core.data)
+core.data$plot <- substr(core.data$plot.id, 3, 3)
 core.data$plot <- as.factor(core.data$plot)
 
 summary(core.data)
@@ -26,7 +27,7 @@ summary(core.data)
 mmf.tr <- read.rwl("mmf_all_trees.rwl")
 head(mmf.tr)
 summary(mmf.tr)
-
+duplicated(mmf.tr)
 #we divide by 10 here because we are in mm going to cm (as long as you upload with dplR) 
 summary(mmf.tr)
 mmf.tr <- mmf.tr/10
@@ -54,7 +55,6 @@ for(j in 1:ncol(mmf.tr)){
 #removing the extra character that tellervo adds
 names(mmf.tr)<-substr(names(mmf.tr), 1, 7)
 head(mmf.tr)
-
 # Subsetting only the sites & species I have full data for right now
 #sites <- unique(establishment$Site)
 #sites
@@ -123,7 +123,7 @@ mmf.id2[1:10]
 #what is going on here?  We have set a sequence from 0 - max DBH, but what does the 2 mean?  Are we doing this by years or cm?  I think we just have some annotation issues here.
 # making bins for your distribution
 head(core.data)
-dbh.bins1 <- seq(10, max(core.data$dbh[core.data$site == "Morgan Monroe State Park"], na.rm=T), 5) # 5 cm bins based on the range of your trees
+dbh.bins1 <- seq(10, max(core.data$dbh[core.data$Site == "Morgan Monroe State Park"], na.rm=T), 5) # 5 cm bins based on the range of your trees
 #dbh.bins2 <- c(seq(0, 40, 5), Inf) # 5 year bins that stop at 40 cm
 
 #do we need this?
@@ -136,13 +136,13 @@ dbh.bins1 <- seq(10, max(core.data$dbh[core.data$site == "Morgan Monroe State Pa
 
 #for the nested sampling design we might want to diagram how much dead stuff we have.  I think this would be easy enough to do, since it is already included in our fieldnotes.
 # Plotting species by size distribution
-qplot(x=dbh, data=diam.data[diam.data$site == "Morgan Monroe State Park",], geom="histogram", breaks=dbh.bins1, fill=spp) + facet_grid(site ~ .) + 
+qplot(x=dbh, data=core.data[core.data$Site == "Morgan Monroe State Park",], geom="histogram", breaks=dbh.bins1, fill=species) + facet_grid(Site ~ .) + 
   theme(axis.line=element_line(color="black", size=0.5), panel.grid.major=element_blank(), panel.grid.minor= element_blank(), panel.border= element_blank(), panel.background= element_blank(), axis.text.x=element_text(angle=0, color="black", size=12), axis.text.y=element_text(color="black", size=12)) + 
-  scale_x_continuous(name="DBH") + ggtitle("Size Distribution") #+ scale_fill_manual(values=as.vector(spp.col.tree$Color))
+  scale_x_continuous(name="DBH") + ggtitle("Size Distribution") #+ scale_fill_manual(values=as.vector(species.col.tree$Color))
 
 # Plotting species by Dated or Not
 #right now this is just for plot B at MMF
-qplot(x=dbh, data=core.data[core.data$site == "Morgan Monroe State Park" ,], geom="histogram", breaks=dbh.bins1, fill=dated) + facet_grid(site ~ .) + 
+qplot(x=dbh, data=core.data[core.data$Site == "Morgan Monroe State Park" ,], geom="histogram", breaks=dbh.bins1, fill=dated) + facet_grid(Site ~ .) + 
   theme(axis.line=element_line(color="black", size=0.5), panel.grid.major=element_blank(), panel.grid.minor= element_blank(), panel.border= element_blank(), panel.background= element_blank(), axis.text.x=element_text(angle=0, color="black", size=12), axis.text.y=element_text(color="black", size=12)) + 
   scale_x_continuous(name="DBH") + ggtitle("Size Distribution") + scale_fill_manual(values=c("gray80", "blue"))
   poster.theme
@@ -220,7 +220,7 @@ summary(core.deets)
 names(core.data)
 
 for(i in unique(core.deets$ID)){
-  core.deets[core.deets$ID==i, "DBH"] <- core.data[core.data$core.id==i,"dbh"]
+  core.deets[core.deets$ID==i, "DBH"] <- core.data[core.data$CoreID==i,"dbh"]
 }
 summary(core.deets)
 
