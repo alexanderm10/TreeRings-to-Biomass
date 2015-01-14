@@ -27,6 +27,8 @@ core.rw <- read.rwl("mmf_all_trees.rwl")
 head(core.rw)
 summary(core.rw)
 
+
+
 #here we are telling the program that NA's in the most recent time are actual zero's.  Either the tree has not grown yet or it has been standing dead.  
 #The issue is that if we really do get a tree that has been standing dead or not put on radial growth in the past 15 years or so it will mess with the value
 #will work for the MMF samples, need to double check all the measured trees when we get done
@@ -81,6 +83,7 @@ length(mmf.id) # checking size
 #summary(diam.data)
 
 names(core.data)
+summary(core.data)
 core.deets <- data.frame(names(core.rw)) 
 names(core.deets) <- "ID"
 summary(core.deets)
@@ -127,6 +130,8 @@ summary(rw.tree)
 min(rw.tree, na.rm=T)
 ncol(rw.tree)
 # FOR CHRISTY: Could you please check this to be sure that I have done the aggregation correctly?
+
+#This is where things fall apart
 
 #diameter reconstructions of each tree from the trees that dated??
 dbh.recon <- rw.tree
