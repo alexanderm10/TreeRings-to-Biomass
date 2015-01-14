@@ -1,0 +1,307 @@
+export(
+	dredge, pdredge, get.models, pget.models, 
+	model.avg, par.avg, 
+	model.sel, mod.sel,
+	getAllTerms, coeffs, coefTable, tTable, 
+	importance, Weights, 
+	AICc, QAIC, QAICc, Cp, ICOMP, CAICF, DIC, 
+	r.squaredLR, null.fit, r.squaredGLMM,
+	QIC, quasiLik,
+	beta.weights, model.names,
+	simplify.formula, expand.formula,
+	updateable, updateable2,
+	uGamm, nested, stdize,
+	exprApply
+)
+
+importFrom(stats, family)
+importFrom(stats, nobs, getCall)
+S3method(getCall, yagsResult)
+
+S3method("$<-", model.selection)
+
+S3method(print, averaging)
+S3method(print, summary.averaging)
+S3method(summary, averaging)
+S3method(predict, averaging)
+S3method(coef, averaging)
+S3method(fitted, averaging)
+S3method(logLik, averaging)
+S3method(confint, averaging)
+S3method(vcov, averaging)
+S3method(model.matrix, averaging)
+S3method(print, model.selection)
+S3method(subset, model.selection)
+S3method("[", model.selection)
+S3method("row.names<-", model.selection)
+
+S3method(merge, model.selection)
+
+S3method(update, model.selection)
+S3method(coef, model.selection)
+S3method(logLik, model.selection)
+
+S3method(model.sel, model.selection)
+S3method(model.sel, default)
+
+S3method(model.avg, model.selection)
+S3method(model.avg, default)
+
+S3method(plot, model.selection)
+
+S3method(importance, averaging)
+S3method(importance, model.selection)
+S3method(importance, default)
+
+S3method(print, importance)
+
+S3method(Weights, model.selection)
+S3method(Weights, averaging)
+S3method(Weights, data.frame)
+S3method(Weights, default)
+
+S3method(getAllTerms, default)
+S3method(coeffs, default)
+S3method(coefTable, default)
+
+S3method(coefTable, averaging)
+
+S3method(coef, model.selection)
+S3method(coeffs, model.selection)
+S3method(coefTable, model.selection)
+
+S3method(print, coefTable)
+
+S3method(AICc, default)
+
+S3method(AICc, logLik)
+
+S3method(getAllTerms, formula)
+S3method(getAllTerms, terms)
+
+S3method(getAllTerms, lm)
+S3method(coefTable, lm)
+
+S3method(getAllTerms, gam)
+
+S3method(nobs, sarlm)
+S3method(coefTable, sarlm)
+
+S3method(coefTable, spautolm)
+S3method(nobs, spautolm)
+
+S3method(logLik, glmmML)
+S3method(coefTable, glmmML)
+S3method(nobs, glmmML)
+S3method(summary, glmmML)
+
+S3method(getAllTerms, coxph)
+S3method(coefTable, coxph)
+S3method(logLik, coxph)
+S3method(nobs, coxph)
+
+S3method(coefTable, survreg)
+S3method(logLik, survreg)
+S3method(nobs, survreg)
+
+S3method(getAllTerms, lme)
+S3method(coeffs, lme)
+S3method(coefTable, lme)
+S3method(predict, lme)
+S3method(predict, gls)
+
+S3method(model.frame, lme)
+S3method(model.matrix, lme)
+
+S3method(getAllTerms, mer)
+S3method(coeffs, mer)
+S3method(coefTable, mer)
+S3method(nobs, mer)
+S3method(predict, mer)
+S3method(family, mer)
+
+S3method(coeffs, merMod)
+
+S3method(coefTable, multinom)
+S3method(coeffs, multinom)
+S3method(nobs, multinom)
+
+S3method(coeffs, gls)
+S3method(coefTable, gls)
+
+S3method(formula, unmarkedFit)
+S3method(getAllTerms, unmarkedFit)
+S3method(coefTable, unmarkedFit)
+S3method(nobs, unmarkedFit)
+S3method(getAllTerms, unmarkedFitDS)
+# this is done by setting S4 method with an .onLoad hook:
+# S3method(logLik, unmarkedFit)
+
+S3method(update, gamm)
+S3method(print, gamm)
+S3method(logLik, gamm)
+S3method(formula, gamm)
+S3method(nobs, gamm)
+S3method(coeffs, gamm)
+S3method(getAllTerms, gamm)
+S3method(coefTable, gamm)
+S3method(predict, gamm)
+
+S3method(makeArgs, default)
+S3method(makeArgs, gls)
+S3method(makeArgs, lme)
+S3method(makeArgs, mer)
+S3method(makeArgs, unmarkedFit)
+S3method(makeArgs, unmarkedFitDS)
+S3method(makeArgs, coxph)
+S3method(makeArgs, clmm)
+S3method(makeArgs, merMod)
+S3method(makeArgs, glmmadmb)
+
+S3method(family, default)
+S3method(family, gls)
+S3method(family, lme)
+
+S3method(nobs, rq)
+S3method(coefTable, rq)
+
+S3method(coefTable, coxme)
+S3method(makeArgs, coxme)
+S3method(formula, coxme)
+S3method(getAllTerms, coxme)
+S3method(nobs, coxme)
+S3method(logLik, coxme)
+S3method(coeffs, coxme)
+
+S3method(coeffs, lmekin)
+S3method(makeArgs, lmekin)
+S3method(coefTable, lmekin)
+S3method(formula, lmekin)
+S3method(nobs, lmekin)
+S3method(logLik, lmekin)
+
+S3method(coefTable, zeroinfl)
+S3method(coefTable, hurdle)
+S3method(getAllTerms, hurdle)
+S3method(getAllTerms, zeroinfl)
+S3method(nobs, hurdle)
+S3method(nobs, zeroinfl)
+S3method(makeArgs, zeroinfl)
+S3method(family, zeroinfl)
+
+S3method(nobs, glimML)
+S3method(formula, glimML)
+S3method(coefTable, glimML)
+S3method(family, glimML)
+S3method(getAllTerms, glimML)
+S3method(terms, glimML)
+
+S3method(formula, MCMCglmm)
+S3method(nobs, MCMCglmm)
+S3method(family, MCMCglmm)
+S3method(logLik, MCMCglmm)
+S3method(coeffs, MCMCglmm)
+S3method(coefTable, MCMCglmm)
+S3method(makeArgs, MCMCglmm)
+S3method(getAllTerms, MCMCglmm)
+
+S3method(extractDIC, mer)
+S3method(extractDIC, merMod)
+S3method(extractDIC, MCMCglmm)
+S3method(extractDIC, lme)
+
+S3method(coef, geese)
+S3method(coefTable, gee)
+S3method(coefTable, geeglm)
+S3method(coefTable, geese)
+S3method(coefTable, yagsResult)
+
+S3method(getQIC, default)
+S3method(getQIC, gee)
+S3method(getQIC, geeglm)
+S3method(getQIC, yagsResult)
+
+S3method(print, quasiLik)
+S3method(quasiLik, gee)
+S3method(quasiLik, geeglm)
+S3method(quasiLik, yagsResult)
+S3method(nobs, yagsResult)
+
+S3method(coeffs, mark)
+S3method(coefTable, mark)
+S3method(confint, mark)
+S3method(deviance, mark)
+S3method(formula, mark)
+S3method(getAllTerms, mark)
+S3method(logLik, mark)
+S3method(makeArgs, mark)
+S3method(nobs, mark)
+
+S3method(coefTable, splm)
+S3method(coeffs, splm)
+S3method(nobs, splm)
+S3method(logLik, splm)
+
+S3method(coefTable, logistf)
+S3method(nobs, logistf)
+S3method(logLik, logistf)
+
+S3method(r.squaredGLMM, lm)
+S3method(r.squaredGLMM, lme)
+S3method(r.squaredGLMM, merMod)
+S3method(r.squaredGLMM, mer)
+S3method(r.squaredGLMM, glmmML)
+
+S3method(coefTable, aodml)
+S3method(coeffs, aodml)
+S3method(coefTable, aodml)
+S3method(makeArgs, aodml)
+S3method(nobs, aodql)
+S3method(coefTable, aodql)
+
+S3method(getAllTerms, betareg)
+S3method(makeArgs, betareg)
+S3method(coefTable, betareg)
+
+S3method(getCall, default)
+S3method(getCall, model.selection)
+
+S3method(nobs, caic)
+S3method(formula, caic)
+S3method(nobs, pgls)
+
+S3method(nobs, asreml)
+S3method(coefTable, asreml)
+S3method(family, asreml)
+S3method(formula, asreml)
+S3method(getAllTerms, asreml)
+S3method(logLik, asreml)
+S3method(makeArgs, asreml)
+S3method(coeffs, asreml)
+
+S3method(nobs, phylolm)
+S3method(logLik, phylolm)
+
+S3method(coefTable, cplm)
+S3method(coefTable, cpglmm)
+S3method(nobs, cplm)
+S3method(nobs, cpglmm)
+S3method(logLik, cplm)
+S3method(coeffs, cpglmm)
+S3method(getAllTerms, cpglmm)
+
+S3method(logLik, maxlikeFit)
+S3method(nobs, maxlikeFit)
+S3method(formula, maxlikeFit)
+S3method(coefTable, maxlikeFit)
+
+S3method(stdize, default)
+S3method(stdize, numeric)
+S3method(stdize, logical)
+S3method(stdize, factor)
+S3method(stdize, data.frame)
+S3method(stdize, formula)
+S3method(stdize, matrix)
+
+
+
