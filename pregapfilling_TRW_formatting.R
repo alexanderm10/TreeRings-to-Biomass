@@ -69,8 +69,7 @@ mmf.id <- as.vector(colnames(core.rw))
 mmf.id[1:10] # checking names
 length(mmf.id) # checking size
 #this is looking at which trees we have measurements for (1,6) translates to AAA000 six characters
-mmf.id2<- unique(substr(mmf.id,1,6))
-mmf.id2[1:10]
+
 
 #This is commented out becasue we have a dated column in our core.data csv file
 # Making a binary column of whether the tree was dated or not
@@ -92,6 +91,8 @@ for(i in unique(core.deets$ID)){
   core.deets[core.deets$ID==i, "DBH"] <- core.data[core.data$CoreID==i,"dbh"]
 }
 summary(core.deets)
+
+
 
 #subsetting the DBH list to match what cores were actually dated
 #core.names <- names(all.dated2)
@@ -127,7 +128,7 @@ min(rw.tree, na.rm=T)
 ncol(rw.tree)
 # FOR CHRISTY: Could you please check this to be sure that I have done the aggregation correctly?
 
-#diameter reconstructions of each tree from the cores that dated??
+#diameter reconstructions of each tree from the trees that dated??
 dbh.recon <- rw.tree
 summary(dbh.recon)
 summary(core.deets)
