@@ -18,11 +18,21 @@ core.data$plot <- as.factor(core.data$plot)
 
 summary(core.data)
 
+tree.data <- read.csv("Copy of DOE_field_notes_2014_updated_MMB spp.csv", na.strings=c("", "NA", "#VALUE!", "*"), header=T)
+#adding a column include which plot at the site the trees belong to
+names(tree.data)
+tree.data$plot <- substr(tree.data$plot.id, 3, 3)
+tree.data$plot <- as.factor(tree.data$plot)
+
+summary(tree.data)
+
+
 #load in core details data sheet.  Has living/dead, pith info, measurement info.
 
 
 #importing ring widths of dated samples as an object and making plot a factor since there were two distinct plots.  We may remove this for the nested design.  
 #Removing NA's from the files
+# FUTURE NOTE: need to create a generalizeable file to house all RW measurements
 core.rw <- read.rwl("mmf_all_trees.rwl")
 head(core.rw)
 summary(core.rw)
@@ -117,39 +127,58 @@ ncol(core.rw)
 #aggregate to the tree level
 #in the future we need to add a hierarchical component so that if a core dated then it trumps a non-dated core
 trees <- unique(substr(names(core.rw), 1, 6)) #Dr. Christy, PhD in being Ninja is smart
-rw.tree <- data.frame(array(NA, dim=c(nrow(core.rw), length(trees))))
-row.names(rw.tree) <- row.names(core.rw)  #CRR Added
-names(rw.tree)<-unique(substr(names(core.rw), 1, 6))
-summary(rw.tree)
-ncol(rw.tree)
+tree.rw <- data.frame(array(NA, dim=c(nrow(core.rw), length(trees))))
+row.names(tree.rw) <- row.names(core.rw)  #CRR Added
+names(tree.rw)<-unique(substr(names(core.rw), 1, 6))
+summary(tree.rw)
+ncol(tree.rw)
 for(i in unique(trees)){
   cols <- which(substr(names(core.rw),1,6)==i)
-  ifelse(length(cols) > 1, rw.tree[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T), rw.tree[,which(trees==i)] <- core.rw[,cols])
+  ifelse(length(cols) > 1, tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T), tree.rw[,which(trees==i)] <- core.rw[,cols])
 }
-summary(rw.tree)
-min(rw.tree, na.rm=T)
-ncol(rw.tree)
+summary(tree.rw)
+min(tree.rw, na.rm=T)
+ncol(tree.rw)
+
 # FOR CHRISTY: Could you please check this to be sure that I have done the aggregation correctly?
 
-#This is where things fall apart
+#making dataframe of tree diameter
+tree.deets <- data.frame(names(tree.rw)) 
+names(tree.deets) <- "ID"
+summary(tree.deets)
+
+names(core.data)
+
+for(i in unique(tree.deets$ID)){
+  tree.deets[tree.deets$ID==i, "DBH"] <- tree.data[tree.data$TreeID==i,"dbh"]
+}
+summary(tree.deets)
+
+# FOR CHRISTY: Could you please check this to be sure that I have done the aggregation correctly?
+
 
 #diameter reconstructions of each tree from the trees that dated??
-dbh.recon <- rw.tree
+dbh.recon <- tree.rw
 summary(dbh.recon)
-summary(core.deets)
+summary(tree.deets)
 for(j in seq_along(dbh.recon)){
   # inserting 2012 DBH
-  dbh.recon[1,j] <- core.deets[core.deets$ID==names(dbh.recon[j]),"DBH"] 
+  dbh.recon[1,j] <- tree.deets[tree.deets$ID==names(dbh.recon[j]),"DBH"] 
   for(i in 2:(length(dbh.recon[,j]))){
-    dbh.recon[i,j] <- ifelse(!is.na(rw.tree[i,j]), dbh.recon[i-1,j] - rw.tree[i-1,j]*2, rw.tree[i,j]*2) # subtracting the previous year's growth from DBH to get that year's DBH
+    dbh.recon[i,j] <- ifelse(!is.na(tree.rw[i,j]), dbh.recon[i-1,j] - tree.rw[i-1,j]*2, tree.rw[i,j]*2) # subtracting the previous year's growth from DBH to get that year's DBH
   }
 }
 summary(dbh.recon)
+min(dbh.recon, na.rm=T)
 
+#quick plot
+spag.plot(dbh.recon)
+plot.rwl(dbh.recon)
 
 
 
 #checking for negative diameters that will need to be removed or switch to inside out orientation (call Christy)
+
 
 min(dbh.recon, na.rm=T)
 summary(dbh.recon)
@@ -160,14 +189,8 @@ write.csv(dbh.recon, "DOE_dbh_recon.csv")
 # FOR CHRISTY: IS THIS WHERE THIS SHOULD GO?
 ##########################################################################
 
-Trees.bai.out <- bai.out(core.rw, diam=core.deets)
-summary(Trees.ba)
+tree.bai.out <- bai.out(tree.rw, diam=tree.deets)
+summary(tree.bai.out)
+min(tree.bai.out, na.rm=T)
 
-
-
-summary(core.deets)
-
-
-
-
-
+# FOR CHRISTY: I think I have things working.  Would you mind doind a quick double check over these scripts before you use them to do the next step?
