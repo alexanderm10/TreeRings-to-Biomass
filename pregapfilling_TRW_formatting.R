@@ -37,14 +37,28 @@ core.rw <- read.rwl("mmf_all_trees.rwl")
 head(core.rw)
 summary(core.rw)
 
+#removing the extra character that tellervo adds
+names(core.rw)<-substr(names(core.rw), 1, 7)
+names(core.rw)
 
 
 #here we are telling the program that NA's in the most recent time are actual zero's.  Either the tree has not grown yet or it has been standing dead.  
 #The issue is that if we really do get a tree that has been standing dead or not put on radial growth in the past 15 years or so it will mess with the value
 #will work for the MMF samples, need to double check all the measured trees when we get done
-for(j in 1:ncol(core.rw)){
-  for(i in which(row.names(core.rw)=="2000"):which(row.names(core.rw)=="2014"))
-    core.rw[i,j] <- ifelse(is.na(core.rw[i,j]), 0, core.rw[i,j])
+# CRR Note: This sets up what data gets gapfilled on the outside vs. which should have 0 growth in the most recent years
+for(j in colnames(core.rw)){ # rather than going by number, we're using names to make things a bit clearer
+
+	# If the core is a zombie or is dead, fill missing outer rings with 0s, otherwise it gets left alone
+	# NOTE: We may need to add another level here if you have cores from multiple years so that things that were cored in a prior year also get 0s (so they don't get gapfilled outsides)
+	if(!is.na(core.data[core.data$CoreID==j, "zombie"]) | core.data[core.data$CoreID==j, "live.dead"]=="DEAD"){ 
+		last.meas <- as.numeric(core.data[core.data$CoreID==j, "outer.measured"]) # last ring which was mesured
+	 	last.yr <- as.numeric(max(row.names(core.rw))) # oldest year in the data frame (this makes it flexible in case you add 2015 cores)
+		if(!(last.meas = last.yr)){ # only do the 0 replacement if there are rows that need to be filled
+			inner.fill <- which(row.names(core.rw)== last.meas+1)
+			outer.fill <- which(row.names(core.rw)==last.yr)
+			core.rw[inner.fill:outer.fill,j] <- 0
+		}
+	}
 }
 
 
@@ -62,9 +76,6 @@ summary(core.rw)
 #3) Live Trees, missing part of core -- model growth
 
 
-#removing the extra character that tellervo adds
-names(core.rw)<-substr(names(core.rw), 1, 7)
-head(core.rw)
 # Subsetting only the sites & species I have full data for right now
 #sites <- unique(establishment$Site)
 #sites
