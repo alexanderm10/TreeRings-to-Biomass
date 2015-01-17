@@ -21,7 +21,7 @@ summary(core.data)
 tree.data <- read.csv("Copy of DOE_field_notes_2014_updated_MMB spp.csv", na.strings=c("", "NA", "#VALUE!", "*"), header=T)
 #adding a column include which plot at the site the trees belong to
 names(tree.data)
-tree.data$plot <- substr(tree.data$plot.id, 3, 3)
+tree.data$plot <- substr(tree.data$PlotID, 3, 3)
 tree.data$plot <- as.factor(tree.data$plot)
 
 summary(tree.data)
