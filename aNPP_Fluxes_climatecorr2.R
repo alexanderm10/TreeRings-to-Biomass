@@ -10,11 +10,12 @@ niwot.c.chrono <- ts(read.table("plotC_detrended_chronos.txt", header=T), end = 
 
 #mmf chronologies consolodated
 
+
 mmf.chrono <- ts(read.csv("chron_all_mmfspp.csv"), end=2014, frequency =1)
 
 # load Flux data (for now both Niwot and MMF are monthly)
 #The niwot flux record spans 1998-2013
-niwot.nep.m <- ts(read.table("monthly_nep_niwot.txt", header=T), end = 20013, frequency =1)
+niwot.nep.m <- ts(read.table("monthly_nep_niwot.txt", header=T), end = 2013, frequency =1)
 
 #The Morgan Monroe flux record spans 1999-2005
 mmf.nep.m <- ts(read.table("monthly_nep_morgan.txt", header=T), end = 2005, frequency = 1)
@@ -62,15 +63,16 @@ for(i in 1:110){
   clim.morgan[[4]][i,] <- get.var.ncdf(open.ncdf(list.files()[i]), start = c(ewMorgan,nMorgan,1), count = c(1,1,12))
   
 }
+
+
+# Reset the working directory to the current folder
 setwd("~/PhD/Conferences/2015/NACP15/NACP_gapfilling")
 
 clim.morgan
-
-write.csv(clim.morgan, "mmf.CRUNCEP.climate.csv")
-
-clim.morgan <- read.csv
-
-### correlation per species in tree rings
+clim.niwot
+###########################################
+### correlation between climate and tree rings
+###########################################
 
 months <- c("pJan", "pFeb","pMar","pApr","pMay","pJun","pJul","pAug","pSep","pOct","pNov","pDec","Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","pYear","pJJA","pAMJJAS","MAM","MJ","AMJJAS","MJJ","JJA","JJ","JA")
 
@@ -90,7 +92,7 @@ for(x in 1:length(clim.cor.niwot.tr)){
   
   for(i in 1:length(periodN)){
     periodN[[i]] <- matrix(data = NA, ncol = 34, nrow = ncol(niwot.b.chrono)); colnames(periodN[[i]]) <- months; rownames(periodN[[i]]) <- colnames(niwot.b.chrono)
-    periodM[[i]] <- matrix(data = NA, ncol = 34, nrow = (ncol(mmf.chrono)-1)); colnames(periodM[[i]]) <- months; rownames(periodM[[i]]) <- colnames(mmf.chrono[,2:ncol(mmf.chrono)])
+    periodM[[i]] <- matrix(data = NA, ncol = 34, nrow = (ncol(mmf.chrono))); colnames(periodM[[i]]) <- months; rownames(periodM[[i]]) <- colnames(mmf.chrono)
   }
   
   for(i in 1:length(periodN)){
@@ -100,8 +102,8 @@ for(x in 1:length(clim.cor.niwot.tr)){
   }
   
   for(i in 1:length(periodM)){
-    for(a in 2:ncol(mmf.chrono)){
-      periodM[[i]][(a-1),] <- as.numeric(fancymonthlycorrels(mmf.chrono[,a],clim.morgan[[i]],first[x],last[x]))
+    for(a in 1:ncol(mmf.chrono)){
+      periodM[[i]][(a),] <- as.numeric(fancymonthlycorrels(mmf.chrono[,a],clim.morgan[[i]],first[x],last[x]))
     }
   }
   
@@ -124,7 +126,7 @@ barplot(clim.cor.niwot.tr[[3]][[2]][,1:24], beside = T, ylim = c(-0.6,0.6), main
 abline(h = c(-0.235,0.235), lty = "dashed")
 barplot(clim.cor.niwot.tr[[3]][[3]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot SW radiation")  #rad
 abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot abs. humidity")  #hum
+barplot(clim.cor.niwot.tr[[3]][[4]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot abs. humidity")  #hum
 abline(h = c(-0.235,0.235), lty = "dashed")
 
 par(mfrow = c(2,2), las=2)
@@ -140,7 +142,7 @@ abline(h = c(-0.235,0.235), lty = "dashed")
 
 #Morgan
 
-par(mfrow = c(2,2), las=2)
+par(mfrow = c(1,1), las=2)
 barplot(clim.cor.morgan.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "mmf temperature")  #temp
 abline(h = c(-0.235,0.235), lty = "dashed") # 0.235 is the significance threshhold for 50 years of data
 barplot(clim.cor.morgan.tr[[3]][[2]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "mmf precipitation")  #precip
@@ -160,109 +162,28 @@ abline(h = c(-0.235,0.235), lty = "dashed")
 barplot(clim.cor.morgan.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "mmf abs. humidity")  #hum
 abline(h = c(-0.235,0.235), lty = "dashed")
 
+###########################################
 # Correlate climate with fluxes
-#need to aggregate the fluxes up to the annual level
+# going to need to generate a matrix to correlaate
+###########################################
 
-#had to make my own correlation tables because I couldnt' get Dave Frank's to work.
-mmf.nep.m
-mmf.nep.a <- as.data.frame(rowMeans(mmf.nep.m))
-names(mmf.nep.a) <- "nep"
-mmf.nep.a$year<-row.names(mmf.nep.a)
+niwot.climate.fluxes <- ts.union(niwot.nep.m, clim.niwot)
 
+###########################################
+# Using Flurns script to correlated climate and fluxes together
+###########################################
 
-
-clim.morgan2<- as.data.frame(clim.morgan)
-clim.morgan2$year <- 1901:2010
-head(clim.morgan2)
-
-clim.morgan3 <- clim.morgan2[clim.morgan2$year %in% 1999:2005,]
-summary(clim.morgan3)
-
-mmf.cor.flux <- rcorr(as.matrix(mmf.nep.a), as.matrix(clim.morgan3), type='pearson')
-
-
-write.csv(mmf.cor.flux$r, "mmf_flux-climate_corr.csv")
-write.csv(mmf.cor.flux$P, "mmf_flux_climate_pvalues.csv")
-
-niwot.nep.m
-niwot.nep.a <- as.data.frame(rowMeans(niwot.nep.m))
-names(niwot.nep.a) <- "nep"
-niwot.nep.a$year <-row.names(niwot.nep.a)
-summary(clim.niwot)
-
-clim.niwot2<- as.data.frame(clim.niwot)
-clim.niwot2$year <-1901:2010
-summary(clim.niwot2)
-
-clim.niwot3 <- clim.niwot2[clim.niwot2$year %in% 1998:2010,]
-niwot.cor.flux <- rcorr(as.matrix(niwot.nep.a[niwot.nep.a$year %in% 1998:2010,]), as.matrix(clim.niwot3), type='pearson')
-
-write.csv(niwot.cor.flux$r, "niwot_flux-climate_corr.csv")
-write.csv(niwot.cor.flux$P, "niwot_flux_climate_pvalues.csv")
-
-# nifty plotting script
-par(mfrow = c(2,2), las=2)
-# Niwot
-# Temperature
-barplot(niwot.cor.flux$r[3:14,"nep"], col= ifelse(niwot.cor.flux$P[3:14,"nep"] < 0.05, "blue", "white"), ylim=c(-1,1), main="Niwot Temp:flux Pearson")
-
-# precipitation
-barplot(niwot.cor.flux$r[15:26,"nep"], col= ifelse(mmf.cor.flux$P[15:26,"nep"] < 0.05, "blue", "white"), ylim=c(-1,1), main="Niwot Precip:flux Pearson")
-
-# SW Radiation
-barplot(niwot.cor.flux$r[27:38,"nep"], col= ifelse(niwot.cor.flux$P[27:38,"nep"] < 0.05, "blue", "white"), ylim=c(-1,1), main="Niwot SW Rad:flux Pearson")
-
-# Humidity
-barplot(niwot.cor.flux$r[39:50,"nep"], col= ifelse(niwot.cor.flux$P[39:50,"nep"] < 0.05, "blue", "white"), ylim=c(-1,1), main="Niwot Humidity:flux Pearson")
-
-# MMF
-# Temperature
-barplot(mmf.cor.flux$r[3:14,"nep"], col= ifelse(mmf.cor.flux$P[3:14,"nep"] < 0.05, "blue", "white"), ylim=c(-1,1), main="MMF Temp:flux Pearson")
-
-# precipitation
-barplot(mmf.cor.flux$r[15:26,"nep"], col= ifelse(mmf.cor.flux$P[15:26,"nep"] < 0.05, "blue", "white"),  ylim=c(-1,1),main="MMF Precip:flux Pearson")
-
-# SW Radiation
-barplot(mmf.cor.flux$r[27:38,"nep"], col= ifelse(mmf.cor.flux$P[27:38,"nep"] < 0.05, "blue", "white"),  ylim=c(-1,1),main="MMF SW Rad:flux Pearson")
-
-# Humidity
-barplot(mmf.cor.flux$r[39:50,"nep"], col= ifelse(mmf.cor.flux$P[39:50,] < 0.05, "blue", "white"),  ylim=c(-1,1),main="MMF Humidity:flux Pearson")
-
-
-#correlating the tree rings to the tower record
-niwot.b.chrono2 <- read.csv("plotB_detrended_chronos.csv", header=T)
-
-summary(niwot.b.chrono2)
-
-mmf.chrono2 <- read.csv("chron_all_mmfspp_with_year_column.csv", header=T)
-
-summary(mmf.chrono2)
-#niwot
-
-niwot.nep.m
-
-niwot.nep.m <- as.data.frame(niwot.nep.m)
-summary(niwot.nep.m)
-
-niwot.b.chrono2
-clim.niwot2[clim.niwot2$year %in% 1998:2010,]
-
-niwot.flux.tr.corr <- rcorr(as.matrix(niwot.b.chrono2[niwot.b.chrono2$year %in% 1998:2012,]), as.matrix(niwot.nep.m[niwot.nep.m$year %in% 1998:2012,]), type="pearson")
-
-
-
-# Flurins fancy script
 months <- c("pJan", "pFeb","pMar","pApr","pMay","pJun","pJul","pAug","pSep","pOct","pNov","pDec","Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","pYear","pJJA","pAMJJAS","MAM","MJ","AMJJAS","MJJ","JJA","JJ","JA")
 
 first <- c(1998)
-last <- c(2012)
+last <- c(2010)
 
 clim.cor.niwot.flux <- vector(mode = "list", length = length(first))
 clim.cor.morgan.flux <- vector(mode = "list", length = length(first))
-names(clim.cor.niwot.flux) <- c("1901-2010","1901-1955","1956-2010","1901-1930","1910-1940", "1920-1950", "1930-1960", "1940-1970", "1950-1980", "1960-1990", "1970-2000", "1980-2010")
+names(clim.cor.niwot.flux) <- c("1998-2010")
 names(clim.cor.morgan.flux) <- names(clim.cor.niwot.flux)
 
-for(x in 1:length(clim.cor.morgan.flux)){
+for(x in 1:length(clim.cor.niwot.flux)){
   
   periodN <- vector(mode = "list", length = 4); names(periodN) <- c("temp", "precip", "radiation","airhumidity")
   periodM<- vector(mode = "list", length = 4); names(periodM) <- c("temp", "precip", "radiation","airhumidity")
@@ -270,7 +191,7 @@ for(x in 1:length(clim.cor.morgan.flux)){
   
   for(i in 1:length(periodN)){
     periodN[[i]] <- matrix(data = NA, ncol = 34, nrow = ncol(niwot.nep.m)); colnames(periodN[[i]]) <- months; rownames(periodN[[i]]) <- colnames(niwot.nep.m)
-    periodM[[i]] <- matrix(data = NA, ncol = 34, nrow = (ncol(mmf.nep.m)-1)); colnames(periodM[[i]]) <- months; rownames(periodM[[i]]) <- colnames(mmf.nep.m[,2:ncol(mmf.nep.m)])
+    periodM[[i]] <- matrix(data = NA, ncol = 34, nrow = (ncol(mmf.nep.m))); colnames(periodM[[i]]) <- months; rownames(periodM[[i]]) <- colnames(mmf.nep.m)
   }
   
   for(i in 1:length(periodN)){
@@ -280,21 +201,87 @@ for(x in 1:length(clim.cor.morgan.flux)){
   }
   
   for(i in 1:length(periodM)){
-    for(a in 2:ncol(mmf.nep.m)){
+    for(a in 1:ncol(mmf.nep.m)){
       periodM[[i]][(a-1),] <- as.numeric(fancymonthlycorrels(mmf.nep.m[,a],clim.morgan[[i]],first[x],last[x]))
     }
   }
   
   
-  clim.cor.morgan.flux[[x]] <- periodN
+  clim.cor.niwot.flux[[x]] <- periodN
   clim.cor.morgan.flux[[x]] <- periodM
   
 }
 
 
+
+
+
+###########################################
+#correlating the tree rings to the fluxes
+###########################################
+
+
+# Flurins fancy script
+months <- c("pJan", "pFeb","pMar","pApr","pMay","pJun","pJul","pAug","pSep","pOct","pNov","pDec","Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","pYear","pJJA","pAMJJAS","MAM","MJ","AMJJAS","MJJ","JJA","JJ","JA")
+
+first <- c(1998)
+last <- c(2012)
+
+flux.cor.niwot.tr <- vector(mode = "list", length = length(first))
+flux.cor.morgan.tr <- vector(mode = "list", length = length(first))
+names(flux.cor.niwot.tr) <- c("1998-2012")
+names(flux.cor.morgan.tr) <- names(flux.cor.niwot.tr)
+
+for(x in 1:length(flux.cor.niwot.tr)){
+  
+  #   periodN <- vector(mode = "list", length = 1); names(periodN) <- c("NEP")
+  #   periodM<- vector(mode = "list", length = 1); names(periodM) <- c("NEP")
+  
+  
+  #   for(i in 1:length(periodN)){
+  #     periodN[[i]] <- matrix(data = NA, ncol = 34, nrow = ncol(niwot.b.chrono)); colnames(periodN[[i]]) <- months; rownames(periodN[[i]]) <- colnames(niwot.b.chrono)
+  #     periodM[[i]] <- matrix(data = NA, ncol = 34, nrow = (ncol(mmf.chrono))); colnames(periodM[[i]]) <- months; rownames(periodM[[i]]) <- colnames(mmf.chrono)
+  #   }
+  #   
+  #   for(i in 1:length(periodN)){
+  periodN <- matrix(data = NA, ncol = 34, nrow = ncol(niwot.b.chrono)); colnames(periodN) <- months; rownames(periodN) <- colnames(niwot.b.chrono)
+  periodM <- matrix(data = NA, ncol = 34, nrow = (ncol(mmf.chrono))); colnames(periodM) <- months; rownames(periodM) <- colnames(mmf.chrono)
+  #  }
+  
+  
+  #   for(i in 1:length(periodN)){
+  #     for(a in 1:ncol(niwot.b.chrono)){
+  #       periodN[[i]][a,] <- as.numeric(fancymonthlycorrels(niwot.b.chrono[,a],niwot.nep.m[[i]],first[x],last[x]))
+  #     }
+  #   }
+  #   
+  
+  #for(i in 1:length(periodN)){
+  for(a in 1:ncol(niwot.b.chrono)){
+    periodN[a,] <- as.numeric(fancymonthlycorrels(niwot.b.chrono[,a],niwot.nep.m,first[x],last[x]))
+  }
+  #  }
+  
+  #   
+  #   for(i in 1:length(periodM)){
+  for(a in 1:ncol(mmf.chrono)){
+    periodM[(a),] <- as.numeric(fancymonthlycorrels(mmf.chrono[,a],mmf.nep.m,first[x],last[x]))
+  }
+  #   }
+  
+  
+  flux.cor.niwot.tr[[x]] <- periodN
+  flux.cor.morgan.tr[[x]] <- periodM
+  
+}
+  
+
 #plotting graphs for Tree RIng climate response
 
 #Niwot
+
+par(mfrow = c(1,1))
+image.plot(flux.cor.morgan.tr[[1]])
 
 par(mfrow = c(2,2))
 barplot(clim.cor.niwot.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "temperature")  #temp
