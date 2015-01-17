@@ -5,6 +5,7 @@ se <- function(x){
 
 #################################################################################################
 # Loading up .csv file that has meta data and RWL files for ring widths
+# Also doing some housekeeping (unit conversions, name formats) up front to make the workflow smoother
 #################################################################################################
 
 #importing the diameter files of all trees sampled: includes tree id, spp, plot assignment, and DBH 
@@ -41,11 +42,24 @@ summary(core.rw)
 names(core.rw)<-substr(names(core.rw), 1, 7)
 names(core.rw)
 
+# NOTE: Unit Conversion Step
+#we divide by 10 here because we are in mm going to cm (as long as you upload with dplR) 
+summary(core.rw)
+core.rw <- core.rw/10
+summary(core.rw)
 
-#here we are telling the program that NA's in the most recent time are actual zero's.  Either the tree has not grown yet or it has been standing dead.  
-#The issue is that if we really do get a tree that has been standing dead or not put on radial growth in the past 15 years or so it will mess with the value
-#will work for the MMF samples, need to double check all the measured trees when we get done
+
+
+# ----------------------------------------------------------------------------
+#add zeros to the outside if the tree is dead.  We do not want to generate modeled values for dead or zombie trees!
+# Separating Dead vs. Missing rings
+# What we need to know:
+#1) Dead trees -- fill missing years with 0
+#2) Live Trees, no growth in year (Zombie Trees) -- fill with 0
+#3) Live Trees, missing part of core -- model growth
+
 # CRR Note: This sets up what data gets gapfilled on the outside vs. which should have 0 growth in the most recent years
+
 for(j in colnames(core.rw)){ # rather than going by number, we're using names to make things a bit clearer
 
 	# If the core is a zombie or is dead, fill missing outer rings with 0s, otherwise it gets left alone
@@ -60,20 +74,8 @@ for(j in colnames(core.rw)){ # rather than going by number, we're using names to
 		}
 	}
 }
+# ----------------------------------------------------------------------------
 
-
-# NOTE: Unit Conversion Step
-#we divide by 10 here because we are in mm going to cm (as long as you upload with dplR) 
-summary(core.rw)
-core.rw <- core.rw/10
-summary(core.rw)
-
-#add zeros to the outside if the tree is dead.  We do not want to generate modeled values for dead trees! Do this later.
-# Separating Dead vs. Missing rings
-# What we need to know:
-#1) Dead trees -- fill missing years with 0
-#2) Live Trees, no growth in year (Zombie Trees) -- fill with 0
-#3) Live Trees, missing part of core -- model growth
 
 
 # Subsetting only the sites & species I have full data for right now
@@ -88,9 +90,9 @@ summary(core.rw)
 
 # looking at which cores for which we have measurements
 # FOR CHRISTY: what about the cores where we don't have any data?  Will that be added later?
-mmf.id <- as.vector(colnames(core.rw))
-mmf.id[1:10] # checking names
-length(mmf.id) # checking size
+cores.meas <- as.vector(colnames(core.rw))
+cores.meas[1:10] # checking names
+length(cores.meas) # checking size
 #this is looking at which trees we have measurements for (1,6) translates to AAA000 six characters
 
 
@@ -135,23 +137,50 @@ ncol(core.rw)
 #AGGREGATION STEP
 #taking ring widths and aggregating from the core level to the tree level
 ##########################################################################
-#aggregate to the tree level
-#in the future we need to add a hierarchical component so that if a core dated then it trumps a non-dated core
-trees <- unique(substr(names(core.rw), 1, 6)) #Dr. Christy, PhD in being Ninja is smart
-tree.rw <- data.frame(array(NA, dim=c(nrow(core.rw), length(trees))))
-row.names(tree.rw) <- row.names(core.rw)  #CRR Added
-names(tree.rw)<-unique(substr(names(core.rw), 1, 6))
-summary(tree.rw)
-ncol(tree.rw)
+# ----------------------------------------------------------------------------
+# aggregate to the tree level using only dated trees where possible
+trees <- unique(substr(names(core.rw), 1, 6)) # listing trees we have measurements for
+tree.rw <- data.frame(array(NA, dim=c(nrow(core.rw), length(trees)))) # a blank data frame to put everything in
+row.names(tree.rw) <- row.names(core.rw)  # labeling the rows with the years from our rwl
+names(tree.rw)<-unique(substr(names(core.rw), 1, 6)) # labeling the columns as trees
+# summary(tree.rw) # this will get really big very quickly
+dim(tree.rw) # 90 trees, 112 years of data
 for(i in unique(trees)){
-  cols <- which(substr(names(core.rw),1,6)==i)
-  ifelse(length(cols) > 1, tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T), tree.rw[,which(trees==i)] <- core.rw[,cols])
-}
-summary(tree.rw)
-min(tree.rw, na.rm=T)
-ncol(tree.rw)
+  cols <- which(substr(names(core.rw),1,6)==i) # getting the columns we're working with
+  cores <- names(core.rw)[cols] # getting the name of the cores we're working with
+  
+  if(length(cols) == 1){ # if there's only one core, we just take that regardless of wheter it's dated or not
+   	tree.rw[,which(trees==i)] <- core.rw[,cols]
+  	} else { 
+  	# if there's more than 1 core, we need to figure out which if any were dated
+  	use <- vector(length=length(cols))
+	for(x in 1:length(cols)){
+		ifelse(core.data[core.data$CoreID==cores[x], "dated"]=="Y", use[x] <- "TRUE", use[x] <- "FALSE")
+	 }	
 
-# FOR CHRISTY: Could you please check this to be sure that I have done the aggregation correctly?
+	# now we know which were dated, so we can use that to figure out which cores to average
+	if(length(use[use=="TRUE"])==1) { # if only 1 core is dated, use only that core
+  	 	tree.rw[,which(trees==i)] <- core.rw[,cols[which(use=="TRUE")]]
+	} else if(length(use[use=="TRUE"])>1) { # If there's greater than one dated core, take the mean of the dated cores
+		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols[which(use=="TRUE")]], na.rm=T)
+	} else { # If no cores are dated, take the mean of whatever we have
+		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T) 
+	}
+  }
+}
+# summary(tree.rw)
+min(tree.rw, na.rm=T)
+dim(tree.rw)
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# CRR: writing our tree RWL to a csv and then moving to modeling RWL so we can gap fill before we calculate BAI (bc some have missing outsides and that's bad if we're working outside-in in out calculations)
+
+write.csv(tree.rw, "TreeRWL.csv", row.names=T)
+# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+
 
 #making dataframe of tree diameter
 tree.deets <- data.frame(names(tree.rw)) 
@@ -164,8 +193,6 @@ for(i in unique(tree.deets$ID)){
   tree.deets[tree.deets$ID==i, "DBH"] <- tree.data[tree.data$TreeID==i,"dbh"]
 }
 summary(tree.deets)
-
-# FOR CHRISTY: Could you please check this to be sure that I have done the aggregation correctly?
 
 
 #diameter reconstructions of each tree from the trees that dated??
