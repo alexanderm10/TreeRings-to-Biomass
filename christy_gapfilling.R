@@ -41,7 +41,6 @@ q.blank <- theme(axis.line=element_line(color="black", size=0.5), panel.grid.maj
 # 3) Aggregate to tree (factoring in whether cores were dated) level & decide if an entire tree is dated or not -- WRITE THIS AS A FILE!
 # 4) Stack RWL & Merge with metadata (becomes "ring.data" or named equivalent)
 
-# Additional steps: assign Dead trees a canopy class based on their DBH
 
 # Ring.data format: stack all of the core BAI, so that data frame with a SIGNLE BAI column, and then all of the factors in other columns
 ring.data <- read.csv("TreeRWL_stacked.csv")
@@ -62,12 +61,6 @@ trees.dated <- ring.data[ring.data$Dated=="Y","TreeID"]
 #	when we fit a generalized version for missing trees, we'll have to decide what to fit it to instead of TreeID; I think probably species|plot
 # m1 <- gamm(RW ~ s(Year, bs="cs", k=3) + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
 
-
-# Trying to create a "null hypothesis" for the model to fit where growth = 0 for rings we don't have
-ring.data$RW0 <- ring.data$RW
-ring.data[is.na(ring.data$RW), "RW0"] <- 0
-summary(ring.data)
-
 # ----------------------------------------------------------------
 # IDEAL MODEL FORM (it won't work for many reasons)
 #	-- won't predict outside range of years observed on each core
@@ -76,38 +69,46 @@ summary(ring.data)
 # m1d <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
 # ----------------------------------------------------------------
 
-# Option 1: a gamm
-m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species + dbh + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
 
+# ----------------------------------------------------------------
+# The spline doesn't fit outside the range of observed values, so we need to give it a "null" guess
+# As a very very rough guess right now, filling missing with the measurement from the oldest ring
+# 1) Create rough size-age relationships to give a narrow window of rings to fill (i.e. don't fill a 10 cm oak back to 1900 if our rings stop in 1980)
+# 2) fill the modeling window with non-0 values... perhaps mean growth from last decade or past observed trend?
 
-ring.data$RW0b <- ring.data$RW
-ring.data[ring.data$RW==0, "RW0b"] <- 1e-5
+ring.data$RW0 <- ring.data$RW
+for(i in unique(ring.data$TreeID)){
+	yr <- min(ring.data[ring.data$TreeID==i & !is.na(ring.data$RW), "Year"])
+	ring.data[ring.data$TreeID==i & is.na(ring.data$RW), "RW0"] <- ring.data[ring.data$TreeID==i & ring.data$Year==yr, "RW"]
+}
 summary(ring.data)
+# ----------------------------------------------------------------
 
-m1b <- lme(RW ~ Year + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
-#m1.r2 <- r.squaredGLMM(m1$lme)
-#m1.r2 # R2m = 0.5227, R2c = 0.6785
+# A generalized additive mixed model (gamm) allows us to fit splines in a mixed model context
+# we can let these splines vary by tree which essentially detrends the core
+# here's we're using our dummy-filled ring widths as a response so that the spline will fit over the whole time period of interest
+# NOTE: for this to work with canopy class, we'll need to figure out what to do about dead trees 
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species + dbh, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
 
 # This isn't a great way of doing it, but it'll let you see the splines for each of the cores
 par(mfrow=c(4,5), mar=c(2,2,0,0)+0.1)
 plot(m1$gam)
 
-ring.data$RW.m1 <- predict(m1, ring.data)
-ring.data$RW.m1b <- predict(m1b, ring.data)
+ring.data$RW.modeled <- predict(m1, ring.data)
 summary(ring.data)
 
 # Getting rid of negative ring width because they're impossible --> replacing with 0 to help with later
-ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)
-ring.data$RW.m1b <- ifelse(ring.data$RW.m1b < 0, 0, ring.data$RW.m1n)
+ring.data$RW.modeled <- ifelse(ring.data$RW.modeled < 0, 0, ring.data$RW.modeled)
 summary(ring.data)
 
-par(new=F)
+# VERY rough graphing of the modeled rings we will use to fill the data
+par(new=F, mfrow=c(1,1), mar=c(5,5,0,0)+0.1)
 for(i in unique(ring.data$TreeID)){
 	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))
 	par(new=T)
 }
 for(i in unique(ring.data$TreeID)){
-	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.25, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))
+	plot(RW.modeled ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.4, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T), ylab="")
 	par(new=T)
 }
 # for(i in unique(ring.data$TreeID)){
@@ -116,7 +117,7 @@ for(i in unique(ring.data$TreeID)){
 # }
 par(new=F)
 
-plot(RW.m1b ~ RW.m1, pch=19, xlim=c(0,1), ylim=c(0,1), data=ring.data[is.na(ring.data$RW),])
+plot(RW.modeled ~ RW, pch=19, xlim=c(0,1), ylim=c(0,1), data=ring.data)
 abline(a=0, b=1, col="red")
 
 
@@ -126,80 +127,74 @@ save(m1, file="GapFilling_gamm_mmf_2015.01.rData")
 
 ############
 # Creating a data frame with just predicted
-predict0 <- ring.data[,c("TreeID", "Year", "RW.m1")]
+predict0 <- ring.data[,c("TreeID", "Year", "RW.modeled")]
 predict0$Year <- as.factor(predict0$Year)
 summary(predict0)
 
-cores.predict <- recast(predict0, Year ~ TreeID)
-#summary(cores.predict)
-cores.predict[1:10,1:10]
-cores.predict[(length(cores.predict[,1])-10):length(cores.predict[,1]),1:10]
+trees.predict <- recast(predict0, Year ~ TreeID)
+#summary(trees.predict)
+trees.predict [1:10,1:10]
+trees.predict [(length(trees.predict [,1])-10):length(trees.predict[,1]),1:10]
 
-write.csv(cores.predict, "CARCA_Cores_BAI_predicted.csv", row.names=F)
+write.csv(trees.predict, "Trees_RW_modeled.csv", row.names=F)
 
 ############
 # Creating a data frame with just observed
-cores.bai0 <- ring.data[,c("TreeID", "Year", "BAI")]
-cores.bai0$Year <- as.factor(cores.bai0$Year)
-summary(cores.bai0)
+trees.obs <- ring.data[,c("TreeID", "Year", "RW")]
+trees.obs $Year <- as.factor(trees.obs $Year)
+summary(trees.obs)
 
-cores.bai <- recast(cores.bai0, Year ~ TreeID)
-#summary(cores.bai)
-head(cores.bai[,1:10])
-cores.bai[(length(cores.bai[,1])-10):length(cores.bai[,1]),1:10]
+trees.obs <- recast(trees.obs, Year ~ TreeID)
+#summary(trees.obs)
+head(trees.obs[,1:10])
+trees.obs[(length(trees.obs[,1])-10):length(trees.obs[,1]),1:10]
 
-#summary(cores.bai)
-write.csv(cores.bai, "CARCA_Cores_BAI_measured.csv", row.names=F)
+summary(trees.obs)
+write.csv(trees.obs, "Trees_RW_measured.csv", row.names=F)
 
 ####################################################
-# replacing 0 in measured BAI with predicted values (positive or 0)
+# replacing missing ring widths with predicted values (positive or 0)
 ####################################################
-cores.bai <- read.csv("CARCA_Cores_BAI_measured.csv", row.names=1)
-cores.predict <- read.csv("CARCA_Cores_BAI_predicted.csv", row.names=1)
+trees.obs <- read.csv("Trees_RW_measured.csv", row.names=1)
+trees.predict <- read.csv("Trees_RW_modeled.csv", row.names=1)
 
 # replacing observed with predicted where I don't have ring measurements
-cores.mix1 <- as.data.frame(array(dim=dim(cores.bai)))
-row.names(cores.mix1) <- cores.bai$Year
-names(cores.mix1) <- names(cores.bai)
+trees.gapfill <- trees.obs
 
-for(j in 1:ncol(cores.bai)){
-	for(i in 1:length(cores.mix1[,j])){
-	tmpBAI <- cores.bai[i,j]
-	cores.mix1[i,j] <- ifelse(!is.na(tmpBAI) & tmpBAI>0, tmpBAI, cores.predict[i,j])
-}
-}
-
-#min(cores.mix1[,2:ncol(cores.mix1)])
-cores.mix1[1:10,1:10]
-cores.mix1[(length(cores.mix1[,1])-20):length(cores.mix1[,1]),1:10]
-
-# replacing NA with 0
-#cores.mix1[is.na(cores.mix1)] <- 0
-
-cores.mix1 <- cores.mix1[,2:ncol(cores.mix1)]
-cores.mix1[1:10,1:10]
-cores.mix1[(length(cores.mix1[,1])-20):length(cores.mix1[,1]),1:10]
-min(cores.mix1)
-
-# checking dimensions, adding year row names
-dim(cores.mix1)
-
-
-# ordering to put 2012 at top (makes life easier)
-cores.mix1 <- cores.mix1[order(row.names(cores.mix1), decreasing=T),]
-cores.mix1[1:10,1:10]
-cores.mix1[(length(cores.mix1[,1])-10):length(cores.mix1[,1]),1:10]
-
-# Getting rid of 2013 BAI for non-FLT trees
-for(j in 1:ncol(cores.mix1)){
-	# inserting 2013 BA (pi*(DBH/2)^2) for FLT (sampled in 2013) & NA for everthing else
-	cores.mix1[1,j] <- ifelse(substr(names(cores.mix1[j]), 1, 3)=="FLT", cores.mix1[1,j], NA)
+for(j in 1:ncol(trees.gapfill)){
+	trees.gapfill[is.na(trees.gapfill[,j]),j] <- trees.predict[is.na(trees.gapfill[,j]),j]
 	}
 
-cores.mix1[1:10,1:10]
-cores.mix1[(length(cores.mix1[,1])-10):length(cores.mix1[,1]),1:10]
+#min(trees.gapfill[,2:ncol(trees.gapfill)])
+trees.gapfill[1:10,1:10]
+trees.gapfill[(length(trees.gapfill[,1])-20):length(trees.gapfill[,1]),1:10]
+min(trees.gapfill)
 
-write.csv(cores.mix1, "AllCores_BAI_meas_predicted.csv", row.names=T)
+# checking dimensions, adding year row names
+dim(trees.gapfill)
+
+write.csv(trees.gapfill, "Trees_RW_gapfilled.csv", row.names=T)
+
+
+
+
+
+
+
+
+
+# --------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
+# Haven't been through the rest of this script yet!
+# --------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 ###################################
 # Reconstructing Basal Area working from the outside in
@@ -215,31 +210,31 @@ summary(cores.data)
 
 ##############
 # Actual BA reconstruction
-cores.ba.cum <- as.data.frame(array(dim=dim(cores.mix1)))
-names(cores.ba.cum) <- names(cores.mix1)
-rownames(cores.ba.cum) <- rownames(cores.mix1)
+cores.ba.cum <- as.data.frame(array(dim=dim(trees.gapfill)))
+names(cores.ba.cum) <- names(trees.gapfill)
+rownames(cores.ba.cum) <- rownames(trees.gapfill)
 
 # original to try to do without resorting
-#for(j in seq_along(cores.mix1)){
-#	test[length(cores.mix1[,j]),j] <- pi*((cores.data[cores.data$TreeID==names(cores.mix1[j]),"DBH"]*10)^2)
+#for(j in seq_along(trees.gapfill)){
+#	test[length(trees.gapfill[,j]),j] <- pi*((cores.data[cores.data$TreeID==names(trees.gapfill[j]),"DBH"]*10)^2)
 #	for(i in 1:(length(test[,j])-1)){
-#	test[i,j] <- test[i-1,j] - cores.mix1[i,j]
+#	test[i,j] <- test[i-1,j] - trees.gapfill[i,j]
 #}
 #}
 
-for(j in 1:ncol(cores.mix1)){
+for(j in 1:ncol(trees.gapfill)){
 	# inserting 2013 BA (pi*(DBH/2)^2) for FLT (sampled in 2013) & NA for everthing else
-	cores.ba.cum[1,j] <- ifelse(substr(names(cores.mix1[j]), 1, 3)=="FLT", 
-	pi*(((cores.data[cores.data$TreeID==names(cores.mix1[j]),"DBH"]*10)/2)^2), NA)
+	cores.ba.cum[1,j] <- ifelse(substr(names(trees.gapfill[j]), 1, 3)=="FLT", 
+	pi*(((cores.data[cores.data$TreeID==names(trees.gapfill[j]),"DBH"]*10)/2)^2), NA)
 	
 	# calculating 2012 BA for FLT only
-	cores.ba.cum[2,j] <- ifelse(substr(names(cores.mix1[j]), 1, 3)=="FLT", 
-	 cores.ba.cum[1,j] - cores.mix1[1,j], # For FLT calculate BA by subtracting 2013
-	pi*(((cores.data[cores.data$TreeID==names(cores.mix1[j]),"DBH"]*10)/2)^2)) # for non-FLT, insert 2012 BA
+	cores.ba.cum[2,j] <- ifelse(substr(names(trees.gapfill[j]), 1, 3)=="FLT", 
+	 cores.ba.cum[1,j] - trees.gapfill[1,j], # For FLT calculate BA by subtracting 2013
+	pi*(((cores.data[cores.data$TreeID==names(trees.gapfill[j]),"DBH"]*10)/2)^2)) # for non-FLT, insert 2012 BA
 	
 	# subtracting BAI measurement from diamBAeter of previous year to get end-of-season BA 
 	for(i in 3:(length(cores.ba.cum[,j]))){
-	cores.ba.cum[i,j] <- ifelse(cores.mix1[i,j]>0, cores.ba.cum[i-1,j] - cores.mix1[i-1,j], 0) 
+	cores.ba.cum[i,j] <- ifelse(trees.gapfill[i,j]>0, cores.ba.cum[i-1,j] - trees.gapfill[i-1,j], 0) 
 	}
 	}
 
@@ -446,64 +441,64 @@ summary(cores.pith)
 #dim(cores.pith)
 
 # reading in calculated core data
-cores.bai.mix <- read.csv("AllCores_BAI_meas_predicted.csv", row.names=1)
-#summary(cores.bai.mix)
-cores.bai.mix[1:10, 1:10]
-cores.bai.mix[100:110, 1:10]
-cores.bai.mix[200:210, 1:10]
-dim(cores.bai.mix)
+trees.obs.mix <- read.csv("AllCores_BAI_meas_predicted.csv", row.names=1)
+#summary(trees.obs.mix)
+trees.obs.mix[1:10, 1:10]
+trees.obs.mix[100:110, 1:10]
+trees.obs.mix[200:210, 1:10]
+dim(trees.obs.mix)
 
-names1 <- names(cores.bai.mix)
+names1 <- names(trees.obs.mix)
 names2 <- unique(cores.pith$TreeID)
 length(names1)
 length(names2)
 
 
-cores.pith[cores.pith$TreeID==colnames(cores.bai.mix["BLDA101"]),"pith.use"]
+cores.pith[cores.pith$TreeID==colnames(trees.obs.mix["BLDA101"]),"pith.use"]
 
 
-dim(cores.bai.mix)
+dim(trees.obs.mix)
 
 # creating an object with the range of years
-years <- row.names(cores.bai.mix)
+years <- row.names(trees.obs.mix)
 
-# cores.bai.filled = filled data with Pith Correction
+# trees.obs.filled = filled data with Pith Correction
 # A faster version with help from John
-cores.bai.filled <- cores.bai.mix
-nrow(cores.bai.filled)
-nrow(cores.bai.mix)
+trees.obs.filled <- trees.obs.mix
+nrow(trees.obs.filled)
+nrow(trees.obs.mix)
 
-cores.bai.filled[1:10, 1:10]
-cores.bai.filled[100:110, 1:10]
-cores.bai.filled[233:243, 1:10]
-cores.bai.filled[(nrow(cores.bai.filled)-10):nrow(cores.bai.filled), 1:10]
+trees.obs.filled[1:10, 1:10]
+trees.obs.filled[100:110, 1:10]
+trees.obs.filled[233:243, 1:10]
+trees.obs.filled[(nrow(trees.obs.filled)-10):nrow(trees.obs.filled), 1:10]
 
 
 summary(cores.pith)
 
-for(j in 1:ncol(cores.bai.filled)){
+for(j in 1:ncol(trees.obs.filled)){
 	# create a value with pith year for each core (j)
-	temp.row <- 2015 - cores.pith[cores.pith$TreeID==colnames(cores.bai.filled[j]),"pith.use"]
-	if(temp.row < nrow(cores.bai.filled)) 
-	cores.bai.filled[temp.row:nrow(cores.bai.filled), j] <- 0 # 2015 means keep pith year)
+	temp.row <- 2015 - cores.pith[cores.pith$TreeID==colnames(trees.obs.filled[j]),"pith.use"]
+	if(temp.row < nrow(trees.obs.filled)) 
+	trees.obs.filled[temp.row:nrow(trees.obs.filled), j] <- 0 # 2015 means keep pith year)
 	}
 
-cores.bai.filled[1:10, 1:10]
-cores.bai.filled[100:110, 1:10]
-cores.bai.filled[(nrow(cores.bai.filled)-10):nrow(cores.bai.filled), 1:10]
-min(cores.bai.filled, na.rm=T)
-sum(is.na(cores.bai.filled))
-sum(is.na(cores.bai.mix))
-dim(cores.bai.mix)
+trees.obs.filled[1:10, 1:10]
+trees.obs.filled[100:110, 1:10]
+trees.obs.filled[(nrow(trees.obs.filled)-10):nrow(trees.obs.filled), 1:10]
+min(trees.obs.filled, na.rm=T)
+sum(is.na(trees.obs.filled))
+sum(is.na(trees.obs.mix))
+dim(trees.obs.mix)
 
-#summary(cores.bai.filled)
-row.names(cores.bai.filled)
+#summary(trees.obs.filled)
+row.names(trees.obs.filled)
 
-write.csv(cores.bai.filled, "AllCores_BAI_filledtopith.csv", row.names=T)
+write.csv(trees.obs.filled, "AllCores_BAI_filledtopith.csv", row.names=T)
 
 #par(new=F)
-#for(j in seq_along(cores.bai.filled)){
-#		plot(cores.bai.filled[,j] ~ as.numeric(row.names(cores.bai.filled[1])), xlim=range(as.numeric(row.names(cores.bai.filled[1]))), ylim=range(cores.bai.filled, na.rm=T), xlab="Year", ylab="mm2", type="l", lwd=0.1)
+#for(j in seq_along(trees.obs.filled)){
+#		plot(trees.obs.filled[,j] ~ as.numeric(row.names(trees.obs.filled[1])), xlim=range(as.numeric(row.names(trees.obs.filled[1]))), ylim=range(trees.obs.filled, na.rm=T), xlab="Year", ylab="mm2", type="l", lwd=0.1)
 #	par(new=T)
 #}
 
@@ -548,7 +543,7 @@ sum(is.na(cores.ba.corr))
 sum(is.na(cores.ba.cum))
 dim(cores.ba.corr)
 
-#summary(cores.bai.filled)
+#summary(trees.obs.filled)
 row.names(cores.ba.corr)
 
 write.csv(cores.ba.corr, "AllCores_BA_Cumulative_PithCorrected1.csv", row.names=T)
@@ -599,12 +594,12 @@ cores.ba.corr[200:210, 1:10]
 min(cores.ba.corr, na.rm=T)
 
 # Reading in BAI file that will be necessary for corrections
-cores.bai.filled <- read.csv("AllCores_BAI_filledtopith.csv", row.names=1)
-cores.bai.filled[1:10, 1:10]
-cores.bai.filled[100:110, 1:10]
-cores.bai.filled[(nrow(cores.bai.filled)-10):nrow(cores.bai.filled), 1:10]
-min(cores.bai.filled, na.rm=T)
-sum(is.na(cores.bai.filled))
+trees.obs.filled <- read.csv("AllCores_BAI_filledtopith.csv", row.names=1)
+trees.obs.filled[1:10, 1:10]
+trees.obs.filled[100:110, 1:10]
+trees.obs.filled[(nrow(trees.obs.filled)-10):nrow(trees.obs.filled), 1:10]
+min(trees.obs.filled, na.rm=T)
+sum(is.na(trees.obs.filled))
 
 
 ########################
@@ -631,11 +626,11 @@ names(cores.ba.corr2)
 for(j in unique(cores.check$TreeID)){	
 	pith.row <- ifelse(2014 - cores.check[cores.check$TreeID==j, "pith.use"] < nrow(cores.ba.corr2), 2014 - cores.check[cores.check$TreeID==j, "pith.use"], nrow(cores.ba.corr2))
 
-	cores.ba.corr2[pith.row,j] <- cores.bai.filled[pith.row, j]
+	cores.ba.corr2[pith.row,j] <- trees.obs.filled[pith.row, j]
 	cores.ba.corr2[(pith.row+1):nrow(cores.ba.corr2),j] <- 0
 
 	for(i in (pith.row-1):1){
-		cores.ba.corr2[i,j] <- cores.ba.corr2[i+1, j] + cores.bai.filled[i,j]
+		cores.ba.corr2[i,j] <- cores.ba.corr2[i+1, j] + trees.obs.filled[i,j]
 		}
 	}
 
@@ -821,13 +816,13 @@ cores.ba.ha.stack$Year <- as.numeric(row.names(cores.ba.ha))
 summary(cores.ba.ha.stack)
 
 
-cores.bai.filled <- read.csv("AllCores_BAI_filledtopith.csv", row.names=1)
-#summary(cores.bai.filled)
-cores.bai.filled[1:10, 1:10]
-cores.bai.stack <- stack(cores.bai.filled)
-names(cores.bai.stack) <- c("BAI.filled", "TreeID")
-cores.bai.stack$Year <- as.numeric(row.names(cores.bai.filled))
-summary(cores.bai.stack)
+trees.obs.filled <- read.csv("AllCores_BAI_filledtopith.csv", row.names=1)
+#summary(trees.obs.filled)
+trees.obs.filled[1:10, 1:10]
+trees.obs.stack <- stack(trees.obs.filled)
+names(trees.obs.stack) <- c("BAI.filled", "TreeID")
+trees.obs.stack$Year <- as.numeric(row.names(trees.obs.filled))
+summary(trees.obs.stack)
 
 cores.ba.corr <- read.csv("AllCores_BA_Cumulative_PithCorrected_Final.csv", row.names=1)
 #summary(cores.ba.cum)
@@ -847,7 +842,7 @@ summary(ring.data2)
 dim(ring.data2)
 dim(ring.data1)
 
-ring.data3 <- merge(ring.data2, cores.bai.stack, all.x=T)
+ring.data3 <- merge(ring.data2, trees.obs.stack, all.x=T)
 summary(ring.data3)
 dim(ring.data3)
 dim(ring.data2)

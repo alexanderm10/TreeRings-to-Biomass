@@ -90,35 +90,63 @@ row.names(tree.rw) <- row.names(core.rw)  # labeling the rows with the years fro
 names(tree.rw)<-unique(substr(names(core.rw), 1, 6)) # labeling the columns as trees
 # summary(tree.rw) # this will get really big very quickly
 dim(tree.rw) # 90 trees, 112 years of data
+
+# The Aggregation Loop
 for(i in unique(trees)){
   cols <- which(substr(names(core.rw),1,6)==i) # getting the columns we're working with
   cores <- names(core.rw)[cols] # getting the name of the cores we're working with
   
-  if(length(cols) == 1){ # if there's only one core, we just take that regardless of wheter it's dated or not
+  # -----------------------
+  # if there's only one core, we just take that regardless of wheter it's dated or not
+  if(length(cols) == 1){ 
    	tree.rw[,which(trees==i)] <- core.rw[,cols]
-	
+
 	# if that single core is dated, list the tree as dated ("Y"); if not, list as not ("N")
    	ifelse(core.data[core.data$CoreID==cores, "dated"]=="Y", tree.data[tree.data$TreeID==i, "Dated"] <- "Y", tree.data[tree.data$TreeID==i, "Dated"] <- "N")
+	# Finding a (best-guess) pith date for the tree
+   	tree.data[tree.data$TreeID==i, "Pith"] <- core.data[core.data$CoreID==cores, "pith.yr"]
+  # -----------------------
+
   	} else { 
+
+    # -----------------------
   	# if there's more than 1 core, we need to figure out which if any were dated
   	use <- vector(length=length(cols))
 	for(x in 1:length(cols)){
 		ifelse(core.data[core.data$CoreID==cores[x], "dated"]=="Y", use[x] <- "TRUE", use[x] <- "FALSE")
 	 }	
+    # -----------------------
 
+    # -----------------------
 	# now we know which were dated, so we can use that to figure out which cores to average
-	if(length(use[use=="TRUE"])==1) { # if only 1 core is dated, use only that core and call the tree dated
+	if(length(use[use=="TRUE"])==1) { 
+		# if only 1 core is dated, use only that core and call the tree dated
   	 	tree.rw[,which(trees==i)] <- core.rw[,cols[which(use=="TRUE")]]
   	 	tree.data[tree.data$TreeID==i, "Dated"] <- "Y"
-	} else if(length(use[use=="TRUE"])>1) { # If there's greater than one dated core, take the mean of the dated cores and call the tree dated
+   		tree.data[tree.data$TreeID==i, "Pith"] <- core.data[core.data$CoreID==cores[which(use=="TRUE")], "pith.yr"]
+
+    # -----------------------
+
+	} else if(length(use[use=="TRUE"])>1) { 
+    # -----------------------
+    # If there's greater than one dated core, take the mean of the dated cores and call the tree dated
 		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols[which(use=="TRUE")]], na.rm=T)
 		tree.data[tree.data$TreeID==i, "Dated"] <- "Y"
-	} else { # If no cores are dated, take the mean of whatever we have and call the tree undated
+   		tree.data[tree.data$TreeID==i, "Pith"] <- mean(core.data[core.data$CoreID==cores[which(use=="TRUE")], "pith.yr"], na.rm=T)
+
+	} else { 
+    # -----------------------
+    # If no cores are dated, take the mean of whatever we have and call the tree undated
 		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T) 
 		tree.data[tree.data$TreeID==i, "Dated"] <- "N"
+   		tree.data[tree.data$TreeID==i, "Pith"] <- mean(core.data[core.data$CoreID==cores, "pith.yr"], na.rm=T)
+		
+    # -----------------------
 	}
   }
 }
+# Note: There are some warnings, but I think it's okay
+
 # summary(tree.rw)
 min(tree.rw, na.rm=T); max(tree.rw, na.rm=T)
 dim(tree.rw)
