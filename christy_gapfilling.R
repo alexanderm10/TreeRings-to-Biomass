@@ -14,6 +14,7 @@ library(reshape)
 library(car)
 library(mgcv)
 library(nlme)
+library(lmeSplines)
 #library(lme4)
 library(splines)
 library(MASS)
@@ -27,64 +28,105 @@ q.blank <- theme(axis.line=element_line(color="black", size=0.5), panel.grid.maj
 
 
 #################################################################################################
-# Modeling establishment dates
+# STEP 1: Gap-filling measured trees
+# STEP 1b: Pith-correction in measured trees (useful for stand dynamics; won't do unless you ask for it)
+# STEP 2: Gap-filling missing trees
+#
 # BIG SELLING POINT OF THIS APPROACH: we can quantify different levels of uncertainty & variability
+# Caveats: fitting the initial GAMM is very time-intensive (it may take hours with your full data) because current form fits a spline to each tree in a mixed model framework
+
 #################################################################################################
 # Previous workflow
 # 1) Read in RWL, QA/QC
-# 2) Convert RWL to BAI
 # 3) Aggregate to tree (factoring in whether cores were dated) level & decide if an entire tree is dated or not -- WRITE THIS AS A FILE!
-# 4) Stack BAI & Merge with metadata (becomes "ring.data" or named equivalent)
+# 4) Stack RWL & Merge with metadata (becomes "ring.data" or named equivalent)
 
 # Additional steps: assign Dead trees a canopy class based on their DBH
 
 # Ring.data format: stack all of the core BAI, so that data frame with a SIGNLE BAI column, and then all of the factors in other columns
-ring.data <- read.csv("Cores_FullData_AllYrs.csv")
-ring.data$Plot <- as.factor(ring.data$Plot)
-ring.data$Tree <- as.factor(ring.data$Tree)
+ring.data <- read.csv("TreeRWL_stacked.csv")
+ring.data$tree <- as.factor(ring.data$tree) 
 summary(ring.data)
 
+tree.data <- read.csv("TreeData.csv")
+summary(tree.data)
 
 # We're going to run 2 sets of fillin models:
 # 1) Model based on only DATED trees (m1d)
 # 2) Model based on both DATED and UNDATED trees (m1u)
 
-trees.dated <- ring.data[ring.data$Dated=="YES","TreeID"]
+trees.dated <- ring.data[ring.data$Dated=="Y","TreeID"]
 
-#m1 <- lme(BAI ~ Year + DBH, random=list(Site=~1, Trans=~1, PlotID=~1, TreeID=~1), correlation=corAR1(form=~Year), data=ring.data, na.action=na.omit)
-
-# NOTE: the model wouldn't work with temporal autocorrelation structure; so the filled data is MASSIVELY autocorrelated; but that shoudl be okay for this purpose (filling, not analysis)
-# NOTE: the current model below is the idea form; we may not be able to model it like this because of convergence issues
-m1d <- lme(BAI ~ s(Year) + Species*DBH*Canopy, random=list(Site=~1, PlotID=~1, TreeID=~1), data=ring.data[ring.data$TreeID %in% trees.dated,], na.action=na.omit)
-summary(m1d)
-m1d.r2 <- r.squaredGLMM(m1d)
-m1d.r2 # R2m = 0.5227, R2c = 0.6785
-
-#m1.bld <- lme(BAI ~ Year + DBH, random=list(Trans=~1, PlotID=~1, TreeID=~1), data=ring.data[ring.data$Site=="BLD",], correlation=corAR1(form=~Year), na.action=na.omit)
-#summary(m1.bld)
-#plot(ACF(m1.bld, maxLag=10, resType="n"), alpha=0.05)
-#m1.r2.bld <- r.squaredGLMM(m1.bld)
-#m1.r2.bld # marginal R2 (fixed) = 0.5217865, conditional R2 (fixed + random) = .6790
-
-#m1.irn <- lme(BAI ~ Year + DBH, random=list(Trans=~1, PlotID=~1, TreeID=~1), data=ring.data[ring.data$Site=="BLD",], correlation=corAR1(form=~Year), na.action=na.omit)
-#summary(m1.irn)
-#plot(ACF(m1.irn, maxLag=10, resType="n"), alpha=0.05)
-#m1.r2.irn <- r.squaredGLMM(m1.irn)
-#m1.r2.irn # marginal R2 (fixed) = 0.5039, conditional R2 (fixed + random) = .6337
+# using the gamm allows us to fit a smoothing spline to each tree, which allows us to basically gapfill taking into account unique tree temporal trends
+#	current spline parameter: shrinkage version of cubic spline with 3 knots (stiff CR spline)
+#	when we fit a generalized version for missing trees, we'll have to decide what to fit it to instead of TreeID; I think probably species|plot
+# m1 <- gamm(RW ~ s(Year, bs="cs", k=3) + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
 
 
-# predicting BAI
-ring.data$predict <- predict(m1, newdata=ring.data)
+# Trying to create a "null hypothesis" for the model to fit where growth = 0 for rings we don't have
+ring.data$RW0 <- ring.data$RW
+ring.data[is.na(ring.data$RW), "RW0"] <- 0
 summary(ring.data)
 
-# Getting rid of negative BAI because they're impossible --> replacing with 0 to help with later
-ring.data$predict <- ifelse(ring.data$predict < 0, 0, ring.data$predict)
+# ----------------------------------------------------------------
+# IDEAL MODEL FORM (it won't work for many reasons)
+#	-- won't predict outside range of years observed on each core
+#	-- end up with singularity issues
+#	-- would take FOREVER to fit even if it did work
+# m1d <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+# ----------------------------------------------------------------
+
+# Option 1: a gamm
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species + dbh + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+
+
+ring.data$RW0b <- ring.data$RW
+ring.data[ring.data$RW==0, "RW0b"] <- 1e-5
 summary(ring.data)
+
+m1b <- lme(RW ~ Year + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+#m1.r2 <- r.squaredGLMM(m1$lme)
+#m1.r2 # R2m = 0.5227, R2c = 0.6785
+
+# This isn't a great way of doing it, but it'll let you see the splines for each of the cores
+par(mfrow=c(4,5), mar=c(2,2,0,0)+0.1)
+plot(m1$gam)
+
+ring.data$RW.m1 <- predict(m1, ring.data)
+ring.data$RW.m1b <- predict(m1b, ring.data)
+summary(ring.data)
+
+# Getting rid of negative ring width because they're impossible --> replacing with 0 to help with later
+ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)
+ring.data$RW.m1b <- ifelse(ring.data$RW.m1b < 0, 0, ring.data$RW.m1n)
+summary(ring.data)
+
+par(new=F)
+for(i in unique(ring.data$TreeID)){
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))
+	par(new=T)
+}
+for(i in unique(ring.data$TreeID)){
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.25, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))
+	par(new=T)
+}
+# for(i in unique(ring.data$TreeID)){
+	# plot(RW.m1b ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="blue", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))
+	# par(new=T)
+# }
+par(new=F)
+
+plot(RW.m1b ~ RW.m1, pch=19, xlim=c(0,1), ylim=c(0,1), data=ring.data[is.na(ring.data$RW),])
+abline(a=0, b=1, col="red")
+
+
+# Saving the GAMM From above so we can load it without having to refit it
+save(m1, file="GapFilling_gamm_mmf_2015.01.rData")
 
 
 ############
 # Creating a data frame with just predicted
-predict0 <- ring.data[,c("TreeID", "Year", "predict")]
+predict0 <- ring.data[,c("TreeID", "Year", "RW.m1")]
 predict0$Year <- as.factor(predict0$Year)
 summary(predict0)
 

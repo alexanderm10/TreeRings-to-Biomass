@@ -96,6 +96,9 @@ for(i in unique(trees)){
   
   if(length(cols) == 1){ # if there's only one core, we just take that regardless of wheter it's dated or not
    	tree.rw[,which(trees==i)] <- core.rw[,cols]
+	
+	# if that single core is dated, list the tree as dated ("Y"); if not, list as not ("N")
+   	ifelse(core.data[core.data$CoreID==cores, "dated"]=="Y", tree.data[tree.data$TreeID==i, "Dated"] <- "Y", tree.data[tree.data$TreeID==i, "Dated"] <- "N")
   	} else { 
   	# if there's more than 1 core, we need to figure out which if any were dated
   	use <- vector(length=length(cols))
@@ -104,18 +107,29 @@ for(i in unique(trees)){
 	 }	
 
 	# now we know which were dated, so we can use that to figure out which cores to average
-	if(length(use[use=="TRUE"])==1) { # if only 1 core is dated, use only that core
+	if(length(use[use=="TRUE"])==1) { # if only 1 core is dated, use only that core and call the tree dated
   	 	tree.rw[,which(trees==i)] <- core.rw[,cols[which(use=="TRUE")]]
-	} else if(length(use[use=="TRUE"])>1) { # If there's greater than one dated core, take the mean of the dated cores
+  	 	tree.data[tree.data$TreeID==i, "Dated"] <- "Y"
+	} else if(length(use[use=="TRUE"])>1) { # If there's greater than one dated core, take the mean of the dated cores and call the tree dated
 		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols[which(use=="TRUE")]], na.rm=T)
-	} else { # If no cores are dated, take the mean of whatever we have
+		tree.data[tree.data$TreeID==i, "Dated"] <- "Y"
+	} else { # If no cores are dated, take the mean of whatever we have and call the tree undated
 		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T) 
+		tree.data[tree.data$TreeID==i, "Dated"] <- "N"
 	}
   }
 }
 # summary(tree.rw)
 min(tree.rw, na.rm=T); max(tree.rw, na.rm=T)
 dim(tree.rw)
+
+# We've updated the tree.data file, so lets save our changes before we move any further
+# We only added a new column and didn't change anything that was original, so it should be okay, but lets just double check before moving forward
+tree.data$Dated <- as.factor(tree.data$Dated)
+summary(tree.data)
+# NOTE: right now you have a ridculously long name for your tree data spreadsheet, so I'm going to call it something different for my own sanity right now :-P
+write.csv(tree.data, "TreeData.csv", row.names=F)
+
 # ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
@@ -134,7 +148,9 @@ tree.stack <- merge(tree.stack, tree.data, all.x=T, all.y=F)
 summary(tree.stack)
 dim(tree.stack)
 
-write.csv(tree.rw, "TreeRWL_stacked.csv", row.names=T)
+write.csv(tree.stack, "TreeRWL_stacked.csv", row.names=F)
+
+
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
 

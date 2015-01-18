@@ -1,0 +1,488 @@
+summary(ring.data)
+write.csv(tree.stack, "TreeRWL_stacked.csv", row.names=F)
+summary(ring.data)
+ring.data <- read.csv("TreeRWL_stacked.csv")
+summary(ring.data)
+trees.dated <- ring.data[ring.data$Dated=="YES","TreeID"]
+summary(tree.id)
+summary(tree.data)
+# ----------------------------------------------------------------------------#
+# aggregate to the tree level using only dated trees where possible#
+trees <- unique(substr(names(core.rw), 1, 6)) # listing trees we have measurements for#
+tree.rw <- data.frame(array(NA, dim=c(nrow(core.rw), length(trees)))) # a blank data frame to put everything in#
+row.names(tree.rw) <- row.names(core.rw)  # labeling the rows with the years from our rwl#
+names(tree.rw)<-unique(substr(names(core.rw), 1, 6)) # labeling the columns as trees#
+# summary(tree.rw) # this will get really big very quickly#
+dim(tree.rw) # 90 trees, 112 years of data#
+for(i in unique(trees)){#
+  cols <- which(substr(names(core.rw),1,6)==i) # getting the columns we're working with#
+  cores <- names(core.rw)[cols] # getting the name of the cores we're working with#
+  if(length(cols) == 1){ # if there's only one core, we just take that regardless of wheter it's dated or not#
+   	tree.rw[,which(trees==i)] <- core.rw[,cols]#
+	# if that single core is dated, list the tree as dated ("Y"); if not, list as not ("N")#
+   	ifelse(core.data[core.data$CoreID==cores, "dated"]=="Y", tree.data[tree.data$TreeID==i, "Dated"] <- "Y", tree.data[tree.data$TreeID==i, "Dated"] <- "N")#
+  	} else { #
+  	# if there's more than 1 core, we need to figure out which if any were dated#
+  	use <- vector(length=length(cols))#
+	for(x in 1:length(cols)){#
+		ifelse(core.data[core.data$CoreID==cores[x], "dated"]=="Y", use[x] <- "TRUE", use[x] <- "FALSE")#
+	 }	#
+#
+	# now we know which were dated, so we can use that to figure out which cores to average#
+	if(length(use[use=="TRUE"])==1) { # if only 1 core is dated, use only that core and call the tree dated#
+  	 	tree.rw[,which(trees==i)] <- core.rw[,cols[which(use=="TRUE")]]#
+  	 	tree.data[tree.data$TreeID==i, "Dated"] <- "Y"#
+	} else if(length(use[use=="TRUE"])>1) { # If there's greater than one dated core, take the mean of the dated cores and call the tree dated#
+		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols[which(use=="TRUE")]], na.rm=T)#
+		tree.data[tree.data$TreeID==i, "Dated"] <- "Y"#
+	} else { # If no cores are dated, take the mean of whatever we have and call the tree undated#
+		tree.rw[,which(trees==i)] <- rowMeans(core.rw[,cols], na.rm=T) #
+		tree.data[tree.data$TreeID==i, "Dated"] <- "N"#
+	}#
+  }#
+}#
+# summary(tree.rw)#
+min(tree.rw, na.rm=T); max(tree.rw, na.rm=T)#
+dim(tree.rw)#
+# ----------------------------------------------------------------------------
+summary(tree.data)
+summary(tree.data)
+tree.data$Dated <- as.factor(tree.data$Dated)
+summary(tree.data)
+write.csv(tree.data, "TreeData.csv", row.names=F)
+# stacking the RWL so that we have a single column of ring widths & an identifying column with TreeID#
+tree.stack <- stack(tree.rw)#
+names(tree.stack) <- c("RW", "TreeID")#
+tree.stack$Year <- as.numeric(row.names(tree.rw)) # adding in the years#
+summary(tree.stack)#
+#
+# attaching all of our useful tree data#
+summary(tree.data)#
+tree.stack <- merge(tree.stack, tree.data, all.x=T, all.y=F)#
+summary(tree.stack)#
+dim(tree.stack)
+write.csv(tree.stack, "TreeRWL_stacked.csv", row.names=F)
+tree.data <- read.csv("TreeData.csv")
+summary(tree.data)
+summary(ring.data)
+ring.data <- read.csv("TreeRWL_stacked.csv")#
+ring.data$tree <- as.factor(ring.data$tree) #
+summary(ring.data)
+trees.dated.full <- ring.data[complete.cases(ring.data) & ring.data$Dated==Y,]
+trees.dated.full <- ring.data[complete.cases(ring.data) & ring.data$Dated=="Y",]
+m1d <- lme(BAI ~ s(Year) + Species*DBH*Canopy, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+# importing libraries#
+library(dplR)#
+library(lattice)#
+#
+# Getting Libraries#
+library(reshape)#
+library(car)#
+library(mgcv)#
+library(nlme)#
+#library(lme4)#
+library(splines)#
+library(MASS)#
+library(MuMIn)#
+library(ggplot2)#
+library(grid)#
+se <- function(x){#
+	sd(x, na.rm=TRUE) / sqrt((length(!is.na(x))))}#
+#
+q.blank <- theme(axis.line=element_line(color="black", size=0.5), panel.grid.major=element_blank(), panel.grid.minor= element_blank(), panel.border= element_blank(), panel.background= element_blank(), axis.text.x=element_text(angle=0, color="black", size=14, face="bold"), axis.text.y=element_text(color="black", size=12, face="bold"), axis.title.x=element_text(face="bold", size=14),  axis.title.y=element_text(face="bold", size=14))
+m1d <- lme(BAI ~ s(Year) + Species*DBH*Canopy, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+?s
+?spline
+m1d <- lme(RW ~ spline(Year) + Species*DBH*Canopy, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+m1d <- lme(RW ~ spline(Year) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+install.packages("lmeSplines")
+trees.dated.full$sYear <- smspline(~Year, data=trees.dated.full)
+library(smspline)
+library(lmeSplines)
+trees.dated.full$sYear <- smspline(~Year, data=trees.dated.full)
+summary(trees.dated.full)
+m1d <- lme(RW ~ sYear) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+m1d <- lme(RW ~ sYear + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+m1d <- lme(RW ~ s(Year) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+m1d <- gamm(RW ~ s(Year) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+m1d <- gamm(RW ~ s(Year, by=TreeID) + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+test <- gamm(RW ~ s(Year) + DBH, random=list(PlotID=~1), data=trees.dated.full)
+test <- gamm(RW ~ s(Year) + species, random=list(PlotID=~1), data=trees.dated.full)
+summary(test)
+plot(test$gam)
+test <- gamm(RW ~ s(Year, by=TreeID) + species, random=list(PlotID=~1), data=trees.dated.full)
+summary(test)
+summary(test$lme)
+plot(test$gam)
+test <- gamm(RW ~ s(Year, by=TreeID) + species*canopy.class, random=list(site=~1, PlotID=~1), data=trees.dated.full)
+test <- gamm(RW ~ s(Year, by=TreeID) + species*dbh, random=list(site=~1, PlotID=~1), data=trees.dated.full)
+test <- gamm(RW ~ s(Year, by=TreeID) + species, random=list(site=~1, PlotID=~1), data=trees.dated.full)
+test <- gamm(RW ~ s(Year, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1), data=trees.dated.full)
+test <- gamm(RW ~ s(Year, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full)
+plot(test$gam)
+summary(tree.dated.full)
+summary(trees.dated.full)
+trees.dated.full <- ring.data[complete.cases(ring.data) & ring.data$Dated=="Y",]
+trees.dated.full <- ring.data[complete.cases(ring.data) & ring.data$Dated=="Y",]
+summary(trees.dated.full)
+length(unique(trees.dated.full$TreeID))
+length(unique(tree.data$TreeID))
+length(unique(ring.data$TreeID))
+test <- gamm(RW ~ s(Year, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="cr", by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="cr", by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+plot(m1$gam)
+m1 <- gamm(RW ~ s(Year, bs="cr", knots=3, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="cs", by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+plot(m1$gam)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=trees.dated.full, na.action=na.omit)
+summary(test$lme)
+plot(m1$gam)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + species + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+m1.r2 <- r.squaredGLMM(m1$lme)
+m1.r2 <- r.squaredGLMM(m1)
+summary(m1)
+summary(m1$gam)
+par(4,5)#
+plot(m1$gam)
+par(mfrow=c(4,5))#
+plot(m1$gam)
+par(mfrow=c(4,5), mar=c(2,2,0,0,0)+0.1)#
+plot(m1$gam)
+par(mfrow=c(4,5), mar=c(2,2,0,0)+0.1)#
+plot(m1$gam)
+summary(ring.data)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data$RW.m1)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3) + species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+summary(m1$gam)
+plot(m1$gam)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- lme(RW ~ species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- lme(RW ~ species + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+levels(species)
+levels(ring.data$species)
+summary(ring.data[ring.data$species=="LIST?"])
+summary(ring.data[ring.data$species=="LIST?",])
+summary(ring.data[ring.data$species=="ACSA",])
+summary(ring.data[ring.data$species=="ASTR",])
+m1 <- lme(RW ~ canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+m1 <- lme(RW ~ Year, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- lme(RW ~ canopy.class, random=list(site=~1, PlotID=~1, Species=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ Year + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+m1 <- lme(RW ~ Year + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+m1 <- lme(RW ~ Year + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data)
+m1 <- lme(RW ~ Year + canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+m1 <- lme(RW ~ Year + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3) + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- lme(RW ~ Year + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + species + dbh, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=TreeID) + dbh, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=PlotID) + dbh, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3, by=PlotID) + dbh, random=list(site=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="cs", k=3) + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="cr", k=3) + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+summary(ring.data)
+?s
+m1 <- gamm(RW ~ s(Year, bs="bs") + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="ps") + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW ~ s(Year, bs="ns") + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW ~ s(Year, bs="re") + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+ring.data$RW0 <- ring.data$RW
+ring.data[is.na(ring.data$RW), "RW0"] <- 0
+summary(ring.data$RW)
+summary(ring.data)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3) + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+plot(m1$gam)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species, random=list(site=~1), data=tree.data.full, na.action=na.omit)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species, random=list(site=~1), data=trees.dated.full, na.action=na.omit)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species, random=list(site=~1), data=ring.data[ring.data$TreeID %in% unique(ring.data$TreeID)[1:10],], na.action=na.omit)
+plot(m1$gam)
+ring.data$RW.m1 <- predict(m1, ring.data)
+ring.data$RW0 <- ring.data$RW#
+ring.data[is.na(ring.data$RW), "RW0"] <- 0#
+summary(ring.data)#
+#
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species, random=list(site=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID), random=list(site=~1), data=ring.data, na.action=na.omit)
+par(mfrow=c(4,5), mar=c(2,2,0,0)+0.1)#
+plot(m1$gam)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + spcies + dbh + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species + dbh + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+par(mfrow=c(4,5), mar=c(2,2,0,0)+0.1)#
+plot(m1$gam)
+ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)
+summary(ring.data)
+predict0 <- ring.data[,c("TreeID", "Year", "RW.m1")]#
+predict0$Year <- as.factor(predict0$Year)#
+summary(predict0)
+cores.predict <- recast(predict0, Year ~ TreeID)#
+#summary(cores.predict)#
+cores.predict[1:10,1:10]#
+cores.predict[(length(cores.predict[,1])-10):length(cores.predict[,1]),1:10]
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], xlim=range(Year, na.rm=T), ylim=range(RW, na.rm=T))#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", xlim=range(Year, na.rm=T), ylim=range(RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], #
+	type="l", lty=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], #
+	type="l", lty=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+range(ring.data$RW, na.rm=T)
+par(new=F)
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], #
+	type="l", lty=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lty=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], lty=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+?plot
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lty=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", ylim=range(ring.data$RW, na.rm=T), xlim=c(1900,2020))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="l", lwd=0.5, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+m1 <- lme(RW ~ I(exp(Year)) + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ I(exp(Year)), random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ exp(Year), random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+?exp
+m1 <- lme(RW ~ I(Year^2), random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ I(exp(Year)), random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+summary(ring.data)
+m1 <- lme(log(RW) ~ Year, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW0b <- ring.data$RW#
+ring.data[ring.data$RW==0, "RW0b"] <- 1e-5#
+summary(ring.data)
+m1 <- lme(RW ~ I(exp(Year)), random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW0b ~ I(exp(Year)), random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(log(RW0b) ~ Year, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+log(RW0b)
+log(ring.dataRW0b)
+log(ring.data$RW0b)
+m1 <- lme(log(ring.data$RW0b) ~ Year, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(log(RW0b) ~ Year, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ Year, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ Year + species*dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ Year + species + dbh*canopy.class, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- r.squaredGLMM(m1$lme)
+m1 <- r.squaredGLMM(m1)
+ring.data$RW.m1 <- predict(m1, ring.data)#
+summary(ring.data)
+m1 <- lme(RW ~ Year + species*dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+m1 <- lme(RW ~ Year + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)#
+summary(ring.data)#
+#
+# Getting rid of negative ring width because they're impossible --> replacing with 0 to help with later#
+ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)#
+summary(ring.data)#
+#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="l", lwd=0.5, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+ring.data$RW.m1 <- predict(m1, ring.data)#
+summary(ring.data)#
+#
+# Getting rid of negative ring width because they're impossible --> replacing with 0 to help with later#
+ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)#
+summary(ring.data)#
+#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="l", lwd=0.5, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+m1b <- lme(RW ~ Year + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)#
+#m1.r2 <- r.squaredGLMM(m1$lme)#
+#m1.r2 # R2m = 0.5227, R2c = 0.6785
+m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + species + dbh + canopy.class, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)
+summary(ring.data)
+# Getting rid of negative ring width because they're impossible --> replacing with 0 to help with later#
+ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)#
+summary(ring.data)#
+#
+par(new=T)#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+m1b <- lme(RW ~ Year + species + dbh, random=list(site=~1, PlotID=~1, TreeID=~1), data=ring.data, na.action=na.omit)
+ring.data$RW.m1 <- predict(m1, ring.data)#
+ring.data$RW.m1b <- predict(m1b, ring.data)#
+summary(ring.data)#
+#
+# Getting rid of negative ring width because they're impossible --> replacing with 0 to help with later#
+ring.data$RW.m1 <- ifelse(ring.data$RW.m1 < 0, 0, ring.data$RW.m1)#
+ring.data$RW.m1b <- ifelse(ring.data$RW.m1b < 0, 0, ring.data$RW.m1n)#
+summary(ring.data)
+par(new=F)#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+#
+par(new=F)#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T), main="GAMM")#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T), main="Linear")#
+	par(new=T)#
+}
+par(new=F)#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1b ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="blue", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}
+plot(RW.m1b ~ RW.m1, data=ring.data)
+par(new=F)#
+plot(RW.m1b ~ RW.m1, data=ring.data)
+plot(RW.m1b ~ RW.m1, data=ring.data[is.na(ring.data$RW),])
+abline(a=0, b=1, col="red")
+plot(RW.m1b ~ RW.m1, pch=19, xlim=c(0,1), ylim=c(0,1), data=ring.data[is.na(ring.data$RW),])#
+abline(a=0, b=1, col="red")
+par(new=F)#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1b ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="blue", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+par(new=F)
+par(new=F)#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW ~ Year, data=ring.data[ring.data$TreeID==i,], type="l", lwd=0.5, xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+for(i in unique(ring.data$TreeID)){#
+	plot(RW.m1 ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.25, pch=19, col="red", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	par(new=T)#
+}#
+# for(i in unique(ring.data$TreeID)){#
+	# plot(RW.m1b ~ Year, data=ring.data[ring.data$TreeID==i & is.na(ring.data$RW),], type="p", cex=0.5, pch=19, col="blue", xlim=range(ring.data$Year, na.rm=T), ylim=range(ring.data$RW, na.rm=T))#
+	# par(new=T)#
+# }#
+par(new=F)
+summary(tree.data)
+summary(tree.data[!is.na(tree.data$Dated),])
+summary(cored.ata)
+summary(core.data)
+summary(core.data[!is.na(core.data$dated),])
+summary(core.data[!is.na(core.data$dated),])
+test <- core.data[!is.na(core.data$dated),]
+plot(DBH ~ pith.yr, data=test)
+plot(dbh ~ pith.yr, data=test)
+plot(pith.yr ~ dbh, data=test, pch=19)
+lm1 <- lm(pith.yr ~ dbh*canopy.class, data=test)
+summary(lm1)
+lm1 <- lm(pith.yr ~ dbh*canopy.class*species, data=test)
+summary(lm1)
+?save
+save(m1, file="GapFilling_gamm_mmf_2015.01.rData")
