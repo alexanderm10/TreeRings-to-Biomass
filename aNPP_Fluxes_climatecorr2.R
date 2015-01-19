@@ -325,3 +325,15 @@ barplot(clim.cor.morgan.tr[[2]][[3]][,25:34], beside = T, ylim = c(-0.6,0.6), ma
 abline(h = c(-0.235,0.235), lty = "dashed")
 barplot(clim.cor.morgan.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "abs. humidity")  #hum
 abline(h = c(-0.235,0.235), lty = "dashed")
+
+
+#Creating rDatafile for Flurin
+
+save(clim.cor.morgan.flux, file= "climate_vs_flux_mmf.RData")
+save(clim.cor.niwot.flux, file= "climate_vs_flux_niwot.RData")
+
+save(clim.cor.morgan.tr, file= "climate_vs_tr_mmf.RData")
+save(clim.cor.niwot.tr, file= "climate_vs_tr_niwot.RData")
+
+save(flux.cor.morgan.tr, file= "flux_vs_tr_mmf.RData")
+save(flux.cor.niwot.tr, file= "flux_vs_tr_niwot.RData")
