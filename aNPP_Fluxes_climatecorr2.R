@@ -1,6 +1,7 @@
 library(ncdf)
 library(timeSeries)
 library(Hmisc)
+library(fields)
 # NOTE: Run site level detrending script and load objects into the workspace
 
 #load any additional chronologies (In this case Flurin's Niwot Chronologies)
@@ -239,7 +240,8 @@ summary(niwot.cor.t.vs.rad)
 summary(niwot.cor.t.vs.rad)
 barplot(niwot.cor.t.vs.rad)
 
-par(mar=c(5,4.5,4,7))
+par(new=F)
+par(mar=c(5,4.5,4,7), cex=2)
 image(niwot.cor.t.vs.rad, zlim=c(-1,1), axes=F, col=tim.colors(64), main = "Niwot Ridge Temp vs. SW Rad")
 axis(1, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
 axis(2, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), las=2)
@@ -251,7 +253,7 @@ morgan.cor.t.vs.rad <- ts.cor(clim.morgan[[1]], clim.morgan[[3]])
 
 summary(morgan.cor.t.vs.rad)
 barplot(morgan.cor.t.vs.rad)
-par(mar=c(5,4.5,4,7))
+par(mar=c(5,4.5,4,7), cex=2)
 image(morgan.cor.t.vs.rad, zlim=c(-1,1), axes=F, col=tim.colors(64), main= "MMF Temp vs. SW Rad")
 axis(1, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
 axis(2, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), las=2)

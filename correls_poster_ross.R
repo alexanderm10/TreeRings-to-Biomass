@@ -36,18 +36,21 @@ image.plot(clim.cor.niwot.flux[[1]][[i]][,13:24], zlim = c(-1,1), main = title[i
 
 names(clim.cor.morgan.tr) #this shows you the different objects in the list (the way I named them when I created it)
 
-
-title <- c("MMF T vs. TR", "MMF P vs. TR","MMF rad vs. TR","MMF Q vs. TR")
+# Morgan Monroe Climate correlations with tree ring index
+# monthly of current growing season had most interesting results
+title <- c("Temperature", "Precipitation","SW Radiation","Air Humidity")
 par(mfrow = c(4,1))
 
 for(i in 1:length(clim.cor.morgan.tr[[12]])){             #the 12 stands for the 1980-2010 period, we could also take another one...
-barplot(clim.cor.morgan.tr[[12]][[i]][,c(13:24)], beside = T, ylim = c(-0.6,0.6), 
-        col = ifelse(clim.cor.morgan.tr[[12]][[i]][,c(13:24)] > 0.355 | clim.cor.morgan.tr[[12]][[i]][,c(13:24)] < -0.355, 
+barplot(clim.cor.morgan.tr[[12]][[i]][,c(13:21)], beside = T, ylim = c(-0.6,0.6), 
+        col = ifelse(clim.cor.morgan.tr[[12]][[i]][,c(13:21)] > 0.355 | clim.cor.morgan.tr[[12]][[i]][,c(13:21)] < -0.355, 
                      c("orange3", "purple3", "black", "green3", "red1", "dodgerblue", "hotpink"), "white"), 
         border = c("orange3", "purple3", "black", "green3", "red1", "dodgerblue", "hotpink"),  
-        main = title[i], cex.axis = 2, cex.names=2)  #not sure about the color, maybe you wanna play with this yourself a bit
+        main = title[i], cex.main=2, cex.axis = 1.25, cex.names=2, yaxt="n")
+        axis(2, las=2)
+#not sure about the color, maybe you wanna play with this yourself a bit
 
-#abline(v = 72.6)
+#abline(v = c(72.5,144.5), lwd=3)
 }
 
 
@@ -60,17 +63,19 @@ ifelse(i == 4, legend(x=-1,y=1, legend= c("Ash", "Maple", "White Oak", "Tulip Po
 
 
 
-
-
-title <- c("Niwot T vs. TR", "Niwot P vs. TR","Niwot rad vs. TR","Niwot Q vs. TR")
+# c(4:21,26,28:29,31:32)], full two yearbreak down plus seasons
+#niwot ridge, climate vs. ring width index, 1980-2010
+# seasonal correlations were most interesting
+title <- c("Temperature", "Precipitation","SW Radiation","Air Humidity")
 par(mfrow = c(4,1), mar=c(6,4,2,0))
 
 for(i in 1:length(clim.cor.niwot.tr[[12]])){
-  barplot(clim.cor.niwot.tr[[12]][[i]][2:4,c(4:21,26,28:29,31:32)], beside = T, ylim = c(-0.6,0.6), 
-          col = ifelse(clim.cor.niwot.tr[[12]][[i]][2:4,c(4:21,26,28:29,31:32)] > 0.355 | clim.cor.niwot.tr[[12]][[i]][2:4,c(4:21,26,28:29,31:32)] < -0.355,c("red", "blue", "darkorange1"), "white"),
+  barplot(clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)], beside = T, ylim = c(-0.6,0.6), 
+          col = ifelse(clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)] > 0.355 | clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)] < -0.355,c("red", "blue", "darkorange1"), "white"),
           border = c("red", "blue", "darkorange1"),  
-          main = title[i], cex.axis=1.5, cex.names=2)  #not sure about the color, maybe you wanna play with this yourself a bit
-  abline(v = c(36.5,72.5))
+          main = title[i], cex.main=2, cex.axis = 1.25, cex.names=2, yaxt="n")
+          axis(2, las=2)  #not sure about the color, maybe you wanna play with this yourself a bit
+  abline(v = c(36.5,72.5), lwd=3)
   
 }
 # clim.cor.niwot.tr[[12]][[i]][2:4,c(4:21,26,28:29,31:32)]

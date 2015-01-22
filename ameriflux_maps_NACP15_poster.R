@@ -38,6 +38,7 @@ plot(mixed, pch=18, add=T, cex=2, col = "blue")
 plot(mmf.map, pch=15, add=T, cex=3, col = "red")
 plot(niwot.map, pch=19, add=T, cex=3, col= "deeppink")
 
-legend("bottomleft", legend=c("Evergreen", "Deciduous", "Mixed", "Morgan Monroe", "Niwot Ridge"), pch=c(15,19,18,15,19), col=c("dark green", "green", "blue", "red", "deeppink"), cex=1)
+legend("bottomleft", legend=c("Evergreen", "Deciduous", "Mixed", "Morgan Monroe", "Niwot Ridge"), pch=c(15,19,18,15,19), col=c("dark green", "green", "blue", "red", "deeppink"), cex=2)
 
 dev.off()
+
