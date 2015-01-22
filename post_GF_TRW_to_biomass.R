@@ -1,3 +1,4 @@
+library(dplR)
 # Run this script after the gap filling process scripts have been run
 # For the NACP15 abstract run Tree_rw_gapfilled.csv
 
@@ -23,8 +24,14 @@ summary(tree.deets)
 names(tree.data)
 
 for(i in unique(tree.deets$ID)){
-  tree.deets[tree.deets$ID==i, "DBH"] <- tree.data[tree.data$TreeID==i,"dbh"]
+  tree.deets[tree.deets$ID==i, "DBH"] <- tree.data[tree.data$TreeID==i,"dbh"]  
+  
+  tree.deets[tree.deets$ID==i, "SPP"] <- tree.data[tree.data$TreeID==i, "species"]
+  
+  tree.deets[tree.deets$ID==i, "plot"] <- tree.data[tree.data$TreeID==i, "plot"]
 }
+
+
 summary(tree.deets)
 
 
@@ -100,7 +107,7 @@ jenkins.bm.density.meter <- jenkins.bm.density/10000
 summary(jenkins.bm.density.meter)
 
 ##########################################################################
-#now we are in kg of biomass per meter squared
+#now we are in kg of biomass per meter square meter
 ##########################################################################
 
 #now need to aggregate the biomass per tree up to the plot level
@@ -120,10 +127,10 @@ head(jenkins.plot.meter)
 write.csv(jenkins.plot.meter, "MMF_plot_BM_cum.csv")
 
 plot(jenkins.plot.meter$MMA~row.names(jenkins.plot.meter), type="l", col="red")
-par(new = F)
-plot(jenkins.plot.meter$MMB~row.names(jenkins.plot.meter), type="l", col="Green")
-par(new=F)
-plot(jenkins.plot.meter$MMC~row.names(jenkins.plot.meter), type="l", col="Blue")
+par(new = T)
+plot(jenkins.plot.meter$MMB~row.names(jenkins.plot.meter), type="l", col="Green", ylim=range(jenkins.plot.meter$MMA))
+par(new=T)
+plot(jenkins.plot.meter$MMC~row.names(jenkins.plot.meter), type="l", col="Blue",ylim=range(jenkins.plot.meter$MMA))
 
 
 ##########################################################################
@@ -166,6 +173,12 @@ head(jenkins.plot.bm.inc)
 summary(jenkins.plot.bm.inc)
 write.csv(jenkins.plot.bm.inc, "MMF_plot_BM_inc.csv")
 
+plot(jenkins.plot.bm.inc$MMA~row.names(jenkins.plot.bm.inc), type="l", col="red", ylim=c(0,1))
+par(new = T)
+plot(jenkins.plot.bm.inc$MMB~row.names(jenkins.plot.bm.inc), type="l", col="Green",ylim=c(0,1))
+par(new=T)
+plot(jenkins.plot.bm.inc$MMC~row.names(jenkins.plot.bm.inc), type="l", col="Blue",ylim=c(0,1))
+
 ##########################################################################
 # We have now an BM increment for each plot
 # Now need to get the Biomass increment for the site as a whole
@@ -180,6 +193,100 @@ jenkins.site.bm.inc$MMF.SD <- apply(jenkins.plot.bm.inc, 1, sd)
 summary(jenkins.site.bm.inc)
 head(jenkins.site.bm.inc)
 
+
+plot(jenkins.plot.bm.inc$MMA~row.names(jenkins.plot.bm.inc), type="l", col="red", ylim=c(0,1))
+par(new = T)
+plot(jenkins.plot.bm.inc$MMB~row.names(jenkins.plot.bm.inc), type="l", col="Green",ylim=c(0,1))
+par(new=T)
+plot(jenkins.plot.bm.inc$MMC~row.names(jenkins.plot.bm.inc), type="l", col="Blue",ylim=c(0,1))
+par(new=T)
+plot(jenkins.site.bm.inc$MMF~row.names(jenkins.site.bm.inc), type="l", lwd=3, ylim=c(0,1))
+
 write.csv(jenkins.site.bm.inc, "MMF_site_BM_inc.csv")
+
+
+##########################################################################
+# Going to aggregate the biomass to the species level
+##########################################################################
+
+#now need to aggregate the biomass per tree up to the plot level
+# Dr. Rollinson Fix:
+summary(tree.deets)
+spp <- unique(tree.deets$SPP)
+spp.plot <- unique(tree.deets$plot)
+
+tree.deets[1:10,]; jenkins.bm.density.meter[1:10, 1:10]
+summary(spp)
+
+# Making a 3-D array that's years x species x plots
+jenkins.spp.meter <- array(NA, dim=c(nrow(jenkins.bm.density.meter), length(spp), length(spp.plot)))
+row.names(jenkins.spp.meter) <- row.names(jenkins.bm.density.meter)  #CRR Added
+#names(jenkins.spp.meter) <- spp # Skipping this for now because I don't remember how to do names of 3-D arrays
+dim(jenkins.spp.meter)
+
+
+for(i in 1:length(spp.plot)){
+  for(j in 1:length(spp)){ # dim #2!
+    cols <- which(tree.deets$SPP==spp[j] & tree.deets$plot==spp.plot[i])
+    if(length(cols) > 1){ jenkins.spp.meter[,j,i] <- rowSums(jenkins.bm.density.meter[,cols], na.rm=T)
+    } else if (length(cols) == 1) { jenkins.spp.meter[,j,i] <- jenkins.bm.density.meter[,cols] 
+    } else jenkins.spp.meter[,j,i] <- NA
+  }
+}
+dim(jenkins.spp.meter)
+summary(jenkins.spp.meter[,,1])
+summary(jenkins.spp.meter[,,2])
+summary(jenkins.spp.meter[,,3])
+head(jenkins.spp.meter)
+
+test.a <- jenkins.spp.meter[,,1:2]
+summary(test.a)
+
+# test <- data.frame(array(NA, dim=c(nrow(jenkins.bm.density.meter), length(spp))))
+# names(test) <- spp
+# row.names(test) <- row.names(jenkins.bm.density.meter)
+# summary(test)
+# dim(test)
+
+test <- apply(jenkins.spp.meter, c(1:2), FUN=mean, na.rm=T)
+test <- data.frame(test); names(test) <- spp
+summary(test)
+summary(jenkins.site.meter)
+head(jenkins.spp.meter)
+
+test2 <- apply(jenkins.spp.meter, c(1:2), FUN=sd, na.rm=T)
+test2 <- data.frame(test2); names(test2) <- spp
+summary(test2)
+summary(jenkins.site.meter)
+head(jenkins.spp.meter)
+write.csv(jenkins.spp.meter[order(row.names(jenkins.spp.meter), decreasing=F),order(names(jenkins.spp.meter))], "MMF_bm_spp_cum.csv")
+
+# Now need toget an increment for each species, just like we did for the whole site
+
+jenkins.spp.bm.inc <- data.frame(array(NA, dim=c(nrow(jenkins.spp.meter), length(jenkins.spp.meter))))
+names(jenkins.spp.bm.inc) <- names(jenkins.spp.meter)
+row.names(jenkins.spp.bm.inc) <- row.names(jenkins.spp.meter)
+summary(jenkins.spp.bm.inc)
+
+for(j in seq_along(jenkins.spp.bm.inc)){
+  # inserting oldest biomass
+  jenkins.spp.bm.inc[nrow(jenkins.spp.bm.inc),j] <- NA
+  for(i in (length(jenkins.spp.bm.inc[,j])-1):1){
+    jenkins.spp.bm.inc[i,j] <- jenkins.spp.meter[i,j] - jenkins.spp.meter[i+1,j] # subtracting the previous year's growth from DBH to get that year's DBH
+  }
+}
+head(jenkins.spp.bm.inc)
+summary(jenkins.spp.bm.inc)
+
+
+write.csv(jenkins.spp.bm.inc[order(row.names(jenkins.spp.bm.inc), decreasing=F),order(names(jenkins.spp.bm.inc))], "MMF_bm_spp_inc.csv")
+for(j in 2:ncol(vlf.bm.avg)){
+par(new=T)
+for(j in 1:ncol(jenkins.spp.bm.inc)){ 
+  plot(jenkins.spp.bm.inc[,j] ~ row.names(jenkins.spp.bm.inc), type="l", col=rainbow(12), ylim= c(0,1) )
+  par(new=T)
+}
+par(new=F)
+plot(jenkins.site.bm.inc$MMF~ row.names(jenkins.site.bm.inc), type="l", col="red", lwd=2, ylim=c(0,1))
 
 #Swizzle! Things are looking good.  we are now in kg of biomass per meter squared at the plot level.

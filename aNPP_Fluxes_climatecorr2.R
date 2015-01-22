@@ -115,52 +115,6 @@ for(x in 1:length(clim.cor.niwot.tr)){
 
 
 
-#plotting graphs for Tree RIng climate response
-
-#Niwot
-
-par(mfrow = c(2,2), las=2)
-barplot(clim.cor.niwot.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[2]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[3]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[4]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "niwot abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
-
-par(mfrow = c(2,2), las=2)
-barplot(clim.cor.niwot.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "niwot temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[2]][[2]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "niwot precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[2]][[3]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "niwot SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "niwot abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
-
-
-#Morgan
-
-par(mfrow = c(1,1), las=2)
-barplot(clim.cor.morgan.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "mmf temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed") # 0.235 is the significance threshhold for 50 years of data
-barplot(clim.cor.morgan.tr[[3]][[2]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "mmf precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[3]][[3]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "mmf SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "mmf abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
-
-par(mfrow = c(2,2), las=2)
-barplot(clim.cor.morgan.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "mmf temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[2]][[2]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "mmf precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[2]][[3]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "mmf radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "mmf abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
 
 ###########################################
 # Correlate climate with fluxes
@@ -275,56 +229,76 @@ for(x in 1:length(flux.cor.niwot.tr)){
   
 }
   
+##################################################
+# Correlating the Climate with the Climate
+##################################################
+#niwot
+niwot.cor.t.vs.rad <- ts.cor(clim.niwot[[1]], clim.niwot[[3]])
+summary(niwot.cor.t.vs.rad)
 
-#plotting graphs for Tree RIng climate response
+summary(niwot.cor.t.vs.rad)
+barplot(niwot.cor.t.vs.rad)
 
-#Niwot
+par(mar=c(5,4.5,4,7))
+image(niwot.cor.t.vs.rad, zlim=c(-1,1), axes=F, col=tim.colors(64), main = "Niwot Ridge Temp vs. SW Rad")
+axis(1, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+axis(2, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), las=2)
+image.plot(niwot.cor.t.vs.rad, legend.only=T, zlim=c(-1,1))
 
-par(mfrow = c(1,1))
-image.plot(flux.cor.morgan.tr[[1]])
+#MMF
 
-par(mfrow = c(2,2))
-barplot(clim.cor.niwot.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[2]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[3]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
+morgan.cor.t.vs.rad <- ts.cor(clim.morgan[[1]], clim.morgan[[3]])
 
-par(mfrow = c(2,2))
-barplot(clim.cor.niwot.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[2]][[2]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[2]][[3]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.niwot.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
+summary(morgan.cor.t.vs.rad)
+barplot(morgan.cor.t.vs.rad)
+par(mar=c(5,4.5,4,7))
+image(morgan.cor.t.vs.rad, zlim=c(-1,1), axes=F, col=tim.colors(64), main= "MMF Temp vs. SW Rad")
+axis(1, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+axis(2, at = seq(0,1, length.out=12), labels= c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), las=2)
+image.plot(morgan.cor.t.vs.rad, legend.only=T, zlim=c(-1,1))
+
+# months <- c("pJan", "pFeb","pMar","pApr","pMay","pJun","pJul","pAug","pSep","pOct","pNov","pDec","Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","pYear","pJJA","pAMJJAS","MAM","MJ","AMJJAS","MJJ","JJA","JJ","JA")
+# 
+# first <- c(1901,1901,1956,1901,1910,1920,1930,1940,1950,1960,1970,1980)
+# last <- c(2010,1955,2010,1930,1940,1950,1960,1970,1980,1990,2000,2010)
+# 
+# clim.cor.niwot.clim <- vector(mode = "list", length = length(first))
+# clim.cor.morgan.clim <- vector(mode = "list", length = length(first))
+# names(clim.cor.niwot.clim) <- c("1901-2010","1901-1955","1956-2010","1901-1930","1910-1940", "1920-1950", "1930-1960", "1940-1970", "1950-1980", "1960-1990", "1970-2000", "1980-2010")
+# names(clim.cor.morgan.clim) <- names(clim.cor.niwot.clim)
+# 
+# for(x in 1:length(clim.cor.niwot.tr)){
+#   
+#   periodN <- vector(mode = "list", length = 4); names(periodN) <- c("temp", "precip", "radiation","airhumidity")
+#   periodM<- vector(mode = "list", length = 4); names(periodM) <- c("temp", "precip", "radiation","airhumidity")
+#   
+#   
+#   for(i in 1:length(periodN)){
+#     periodN[[i]] <- matrix(data = NA, ncol = 34, nrow = ncol(clim.niwot)); colnames(periodN[[i]]) <- months; rownames(periodN[[i]]) <- colnames(clim.niwot)
+#     periodM[[i]] <- matrix(data = NA, ncol = 34, nrow = (ncol(clim.morgan))); colnames(periodM[[i]]) <- months; rownames(periodM[[i]]) <- colnames(clim.niwot)
+#   }
+#   
+#   for(i in 1:length(periodN)){
+#     for(a in 1:ncol(clim.niwot)){
+#       periodN[[i]][a,] <- as.numeric(fancymonthlycorrels(clim.niwot[,a],clim.niwot[[i]],first[x],last[x]))
+#     }
+#   }
+#   
+#   for(i in 1:length(periodM)){
+#     for(a in 1:ncol(mmf.chrono)){
+#       periodM[[i]][(a),] <- as.numeric(fancymonthlycorrels(clim.niwot[,a],clim.morgan[[i]],first[x],last[x]))
+#     }
+#   }
+#   
+#   
+#   clim.cor.niwot.tr[[x]] <- periodN
+#   clim.cor.morgan.tr[[x]] <- periodM
+#   
+# }
 
 
-#Morgan
 
-par(mfrow = c(2,2))
-barplot(clim.cor.morgan.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed") # 0.235 is the significance threshhold for 50 years of data
-barplot(clim.cor.morgan.tr[[3]][[2]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[3]][[3]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[3]][[1]][,1:24], beside = T, ylim = c(-0.6,0.6), main = "abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
 
-par(mfrow = c(2,2))
-barplot(clim.cor.morgan.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "temperature")  #temp
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[2]][[2]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "precipitation")  #precip
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[2]][[3]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "SW radiation")  #rad
-abline(h = c(-0.235,0.235), lty = "dashed")
-barplot(clim.cor.morgan.tr[[2]][[1]][,25:34], beside = T, ylim = c(-0.6,0.6), main = "abs. humidity")  #hum
-abline(h = c(-0.235,0.235), lty = "dashed")
 
 
 #Creating rDatafile for Flurin
