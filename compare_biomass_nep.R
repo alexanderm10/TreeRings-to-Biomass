@@ -101,6 +101,8 @@ head(ratio.morgan.combo)
 names(ratio.morgan.combo)<- c(" All", "ACSA", "ASTR","FAGR", "FRAX", "LITU", "POGR", "QUAL", "QURU", "SAAL", "TIAM", "ULRU")
 summary(ratio.morgan.combo)
 
+sd.ratio.morgan.combo<- apply(ratio.morgan.combo, 2, FUN=sd)
+
 # ratio.morgan.spp <- as.data.frame(ratio.morgan.spp)
 # #names(ratio.morgan.spp)<- c("ACSA", "ASTR","FAGR", "FRAX", "LITU", "POGR", "QUAL", "QURU", "SAAL", "TIAM", "ULRU")
 # head(ratio.morgan.spp )
@@ -123,10 +125,16 @@ summary(ratio.morgan.stack)
 names(ratio.morgan.stack)<- c("ratio", "Species")
 summary(ratio.morgan.stack)
 
-ratio.niwot <- as.data.frame(ratio.niwot)
+sd.ratio.morgan.combo
+
+ratio.niwot <- data.frame(ratio.niwot)
 row.names(ratio.niwot) <- c(1999:2012)
 names(ratio.niwot) <- c("All SPP", "Fir", "Spruce", "Pine")
 head(ratio.niwot)
+
+summary(ratio.niwot)
+sd.niwot.ratio <- apply(ratio.niwot, 2, FUN=sd)
+summary(sd.niwot.ratio)
 
 ratio.niwot.stack <- stack(ratio.niwot)
 head(ratio.niwot.stack)
@@ -142,14 +150,15 @@ large.axes <- theme(axis.line=element_line(color="black", size=0.5), panel.grid.
 
 poster.theme<-theme(axis.line=element_line(color="black"), panel.grid.major=element_blank(), panel.grid.minor=element_blank(), panel.border=element_blank(),
                     panel.background=element_blank(), axis.text.x=element_text(angle=0, color="black", size=21),
-                    axis.text.y=element_text(angle=0, color="black", size=24), axis.title.x=element_text(face="bold", size=28),
+                    axis.text.y=element_text(angle=0, color="black", size=21), axis.title.x=element_text(face="bold", size=28),
                     axis.title.y=element_text(face="bold", size=28), strip.text=element_text(face="bold", size=rel(1.75)),
                     title=element_text(face="bold", size=30))
-niwot.shapes <- c(15:18)
-
+niwot.shapes <- c(10, 16:18)
+niwot.colors <- c("darkgreen", "olivedrab", "darkturquoise", "mediumorchid")
 ggplot(data=ratio.niwot.stack, aes(Species, ratio)) + 
   geom_violin(adjust=2, scale="width") + 
   scale_shape_manual(values=niwot.shapes) +
+  scale_color_manual(values=niwot.colors)+
   geom_point(position=position_jitter(width=0.15, height=0.0001), aes(shape=Species, color=Species), size=8) + 
   large.axes +
   poster.theme + 
@@ -157,7 +166,7 @@ ggplot(data=ratio.niwot.stack, aes(Species, ratio)) +
   labs(title="Niwot Ridge") +
   theme(axis.title.y=element_text(vjust=2))+
   #theme(axis.title.x=element_text(vjust=0))+
-  scale_y_continuous(name="NEP:aNPP") + scale_x_discrete(name="Species") + 
+  scale_y_continuous(name="aNPP : NEP", limit=c(0,1)) + scale_x_discrete(name="Species") + 
   stat_summary(fun.y=mean, geom="point", shape="_", size=15, color="black") 
   
 
@@ -165,7 +174,7 @@ ggplot(data=ratio.niwot.stack, aes(Species, ratio)) +
 mmf.shapes <- read.csv("SpeciesShapes.csv", header=T)
 
 mmf.shapes <- c(10, 15:20, 15:19)
-mmf.colors <- c("dodgerblue", "purple", "wheat3", "cadetblue3", "orange4", "darkgreen", "hotpink1", "black", "red1", "brown", "goldenrod1", "medium purple1")
+mmf.colors <- c("red", "purple", "wheat3", "cadetblue3", "orange4", "darkgreen", "hotpink1", "black", "red1", "brown", "goldenrod1", "medium purple1")
 # dodgerblue
 # purple
 # wheat3
@@ -194,7 +203,7 @@ ggplot(data=ratio.morgan.stack, aes(Species, ratio)) +
   theme(axis.title.y=element_text(vjust=1.5))+
   theme(axis.title.x=element_text(vjust=-0.1))+
   labs(title="Morgan-Monroe")+
-  scale_y_continuous(name="aNPP : NEP") + scale_x_discrete(name="Species") + 
+  scale_y_continuous(name="aNPP : NEP", limit=c(0,1)) + scale_x_discrete(name="Species") + 
   stat_summary(fun.y=mean, geom="point", shape="_", size=15, color="black") 
 
 #################################################################
@@ -216,5 +225,5 @@ axis(2,las=1)
 par(new=T)
 plot(df.all.morgan.inc[,1], type="l", col="red1", xlim=c(1900,2014), ylim=range(0,600), axes=F, ylab="", xlab="", lwd=3)
 
-legend("topright", legend= c("Niwot Ridge", "Morgan-Monroe"), col= c("darkgreen","red1"), cex=0.75, lty=c(1,4,1,4),lwd=3, bty="n")
+legend("topleft", legend= c("Niwot Ridge", "Morgan-Monroe"), col= c("darkgreen","red1"), cex=0.75, lty=c(1,1),lwd=3, bty="n")
 

@@ -117,6 +117,8 @@ for(x in 1:length(clim.cor.niwot.tr)){
 
 
 
+
+
 ###########################################
 # Correlate climate with fluxes
 # going to need to generate a matrix to correlaate
@@ -168,8 +170,44 @@ for(x in 1:length(clim.cor.niwot.flux)){
 }
 
 
+n.flux.temp.cor<- ts.union(nep.niwot.annual, clim.niwot[[1]])
+n.flux.precip.cor <- ts.union(nep.niwot.annual, clim.niwot[[2]])
+n.flux.rad.cor<- ts.union(nep.niwot.annual, clim.niwot[[3]])
+n.flux.q.cor<- ts.union(nep.niwot.annual, clim.niwot[[4]])
 
 
+n.temp.cor <- ts.cor(n.flux.temp.cor, n.flux.temp.cor)
+n.precip.cor <- ts.cor(n.flux.precip.cor, n.flux.precip.cor)
+n.rad.cor <- ts.cor(n.flux.rad.cor, n.flux.rad.cor)
+n.q.cor <- ts.cor(n.flux.q.cor, n.flux.q.cor)
+
+
+
+barplot(n.temp.cor[1,2:ncol(n.temp.cor)], ylim= c(-0.6,0.6), col= ifelse(n.temp.cor[1,2:ncol(n.temp.cor)] > 0.514 | n.temp.cor[1,2:ncol(n.temp.cor)] < -0.514, "blue", "white"))
+barplot(n.precip.cor[1,2:ncol(n.precip.cor)], ylim= c(-0.6,0.6), col= ifelse(n.temp.cor[1,2:ncol(n.temp.cor)] > 0.514 | n.temp.cor[1,2:ncol(n.temp.cor)] < -0.514, "blue", "white"))
+barplot(n.rad.cor[1,2:ncol(n.rad.cor)], ylim= c(-0.6,0.6), col= ifelse(n.temp.cor[1,2:ncol(n.temp.cor)] > 0.514 | n.temp.cor[1,2:ncol(n.temp.cor)] < -0.514, "blue", "white"))
+barplot(n.q.cor[1,2:ncol(n.q.cor)], ylim= c(-0.6,0.6), col= ifelse(n.temp.cor[1,2:ncol(n.temp.cor)] > 0.514 | n.temp.cor[1,2:ncol(n.temp.cor)] < -0.514, "blue", "white"))
+
+
+
+
+m.flux.temp.cor<- ts.union(nep.morgan.annual, clim.morgan[[1]])
+m.flux.precip.cor <- ts.union(nep.morgan.annual, clim.morgan[[2]])
+m.flux.rad.cor<- ts.union(nep.morgan.annual, clim.morgan[[3]])
+m.flux.q.cor<- ts.union(nep.morgan.annual, clim.morgan[[4]])
+
+
+m.temp.cor <- ts.cor(m.flux.temp.cor, m.flux.temp.cor)
+m.precip.cor <- ts.cor(m.flux.precip.cor, m.flux.precip.cor)
+m.rad.cor <- ts.cor(m.flux.rad.cor, m.flux.rad.cor)
+m.q.cor <- ts.cor(m.flux.q.cor, m.flux.q.cor)
+
+
+par(mfrow=c(4,1))
+barplot(m.temp.cor[1,2:ncol(m.temp.cor)], ylim= c(-0.8,0.8), col= ifelse(m.temp.cor[1,2:ncol(m.temp.cor)] > 0.755 | m.temp.cor[1,2:ncol(m.temp.cor)] < -0.755, "blue", "white"))
+barplot(m.precip.cor[1,2:ncol(m.precip.cor)], ylim= c(-0.8,0.8), col= ifelse(m.temp.cor[1,2:ncol(m.temp.cor)] > 0.755 | m.temp.cor[1,2:ncol(m.temp.cor)] < -0.755, "blue", "white"))
+barplot(m.rad.cor[1,2:ncol(m.rad.cor)], ylim= c(-0.8,0.8), col= ifelse(m.temp.cor[1,2:ncol(m.temp.cor)] > 0.755 | m.temp.cor[1,2:ncol(m.temp.cor)] < -0.755, "blue", "white"))
+barplot(m.q.cor[1,2:ncol(m.q.cor)], ylim= c(-0.8,0.8), col= ifelse(m.temp.cor[1,2:ncol(m.temp.cor)] > 0.755 | m.temp.cor[1,2:ncol(m.temp.cor)] < -0.755, "blue", "white"))
 
 ###########################################
 #correlating the tree rings to the fluxes

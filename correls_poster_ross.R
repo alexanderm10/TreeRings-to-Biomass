@@ -1,5 +1,9 @@
 library(fields)
 
+mmf.colors2 <- c("orange4", "purple", "black", "darkgreen", "red1", "cadetblue3", "goldenrod")
+  
+  
+niwot.colors2 <- c("olivedrab", "darkturquoise", "mediumorchid")
 setwd("C:/Users/babst/Desktop/post_doc_Tucson/ameriflux_sites/niwot_ridge/correlations_Ross")
 
 data <- vector(mode = "list", length = length(list.files()))
@@ -42,10 +46,10 @@ title <- c("Temperature", "Precipitation","SW Radiation","Air Humidity")
 par(mfrow = c(4,1))
 
 for(i in 1:length(clim.cor.morgan.tr[[12]])){             #the 12 stands for the 1980-2010 period, we could also take another one...
-barplot(clim.cor.morgan.tr[[12]][[i]][,c(13:21)], beside = T, ylim = c(-0.6,0.6), 
-        col = ifelse(clim.cor.morgan.tr[[12]][[i]][,c(13:21)] > 0.355 | clim.cor.morgan.tr[[12]][[i]][,c(13:21)] < -0.355, 
-                     c("orange3", "purple3", "black", "green3", "red1", "dodgerblue", "hotpink"), "white"), 
-        border = c("orange3", "purple3", "black", "green3", "red1", "dodgerblue", "hotpink"),  
+barplot(clim.cor.morgan.tr[[12]][[i]][,c(26,28:29,31:32)], beside = T, ylim = c(-0.6,0.6), 
+        col = ifelse(clim.cor.morgan.tr[[12]][[i]][,c(26,28:29,31:32)] > 0.355 | clim.cor.morgan.tr[[12]][[i]][,c(26,28:29,31:32)] < -0.355, 
+                     mmf.colors2, "white"), 
+        border = mmf.colors2,  
         main = title[i], cex.main=2, cex.axis = 1.25, cex.names=2, yaxt="n")
         axis(2, las=2)
 #not sure about the color, maybe you wanna play with this yourself a bit
@@ -56,9 +60,9 @@ barplot(clim.cor.morgan.tr[[12]][[i]][,c(13:21)], beside = T, ylim = c(-0.6,0.6)
 
 
 barplot(clim.cor.morgan.tr[[12]][[1]], col="white", border="white")
-ifelse(i == 4, legend(x=-1,y=1, legend= c("Ash", "Maple", "White Oak", "Tulip Poplar",
-                                         "Red Oak", "Beech", "Sassafras"), col= c("orange3", "purple3", "black", "green3", "red1", "dodgerblue", "hotpink"), 
-                      pch=15, ncol=4, cex=2),"")
+ifelse(i == 4, legend(x=-1,y=1, legend= c("FRAX", "ACSA", "QUAL", "LITU",
+                                         "QURU", "FAGR", "SAAL"), col= mmf.colors2, 
+                      pch=15, horiz=T, cex=1.5),"")
 
 
 
@@ -71,8 +75,8 @@ par(mfrow = c(4,1), mar=c(6,4,2,0))
 
 for(i in 1:length(clim.cor.niwot.tr[[12]])){
   barplot(clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)], beside = T, ylim = c(-0.6,0.6), 
-          col = ifelse(clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)] > 0.355 | clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)] < -0.355,c("red", "blue", "darkorange1"), "white"),
-          border = c("red", "blue", "darkorange1"),  
+          col = ifelse(clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)] > 0.355 | clim.cor.niwot.tr[[12]][[i]][2:4,c(26,28:29,31:32)] < -0.355,niwot.colors2, "white"),
+          border = niwot.colors2,  
           main = title[i], cex.main=2, cex.axis = 1.25, cex.names=2, yaxt="n")
           axis(2, las=2)  #not sure about the color, maybe you wanna play with this yourself a bit
   abline(v = c(36.5,72.5), lwd=3)
@@ -80,7 +84,7 @@ for(i in 1:length(clim.cor.niwot.tr[[12]])){
 }
 # clim.cor.niwot.tr[[12]][[i]][2:4,c(4:21,26,28:29,31:32)]
 barplot(clim.cor.niwot.tr[[12]][[1]], col="white", border="white")
-ifelse(i == 4, legend(x=-1,y=1, legend= c("Fir", "Pine", "Spruce"), col= c("red", "blue", "darkorange1"), pch=15, ncol=4, cex=2),"")
+ifelse(i == 4, legend(x=-1,y=1, legend= c("Fir", "Pine", "Spruce"), col= niwot.colors2, pch=15, ncol=4, cex=1.75),"")
 
 
 
