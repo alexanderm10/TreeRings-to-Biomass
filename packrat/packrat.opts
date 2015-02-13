@@ -1,7 +1,0 @@
-auto.snapshot: TRUE
-use.cache: FALSE
-print.banner.on.startup: auto
-vcs.ignore.lib: FALSE
-vcs.ignore.src: FALSE
-external.packages: 
-local.repos: ~/PhD/Conferences/2015/NACP15/NACP_gapfilling

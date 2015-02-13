@@ -70,18 +70,32 @@ trees.dated <- ring.data[ring.data$Dated=="Y","TreeID"]
 # ----------------------------------------------------------------
 
 
+
 # ----------------------------------------------------------------
 # The spline doesn't fit outside the range of observed values, so we need to give it a "null" guess
 # As a very very rough guess right now, filling missing with the measurement from the oldest ring
 # 1) Create rough size-age relationships to give a narrow window of rings to fill (i.e. don't fill a 10 cm oak back to 1900 if our rings stop in 1980)
 # 2) fill the modeling window with non-0 values... perhaps mean growth from last decade or past observed trend?
 
+# ---------------------------------------
+# 1) Create rough size-age relationships to give a narrow window of rings to fill (i.e. don't fill a 10 cm oak back to 1900 if our rings stop in 1980)
+# ---------------------------------------
+# What we need: core summary data (DBH, estimated pith date)
+
+# ---------------------------------------
+
+# ---------------------------------------
+# 2) fill the modeling window with non-0 values... perhaps mean growth from last decade or past observed trend?
+# ---------------------------------------
 ring.data$RW0 <- ring.data$RW
 for(i in unique(ring.data$TreeID)){
 	yr <- min(ring.data[ring.data$TreeID==i & !is.na(ring.data$RW), "Year"])
+  #fill.first # The first (e.g. X number years past where you measured) ring to add a dummy measurement
+  #fill.RW # the value we stick in the years we want to dummy-fill (e.g. the mean for the last decade)
 	ring.data[ring.data$TreeID==i & is.na(ring.data$RW), "RW0"] <- ring.data[ring.data$TreeID==i & ring.data$Year==yr, "RW"]
 }
 summary(ring.data)
+# ---------------------------------------
 # ----------------------------------------------------------------
 
 # A generalized additive mixed model (gamm) allows us to fit splines in a mixed model context
@@ -89,6 +103,9 @@ summary(ring.data)
 # here's we're using our dummy-filled ring widths as a response so that the spline will fit over the whole time period of interest
 # NOTE: for this to work with canopy class, we'll need to figure out what to do about dead trees 
 m1 <- gamm(RW0 ~ s(Year, bs="cs", k=3, by=TreeID) + spp + dbh, random=list(site=~1, PlotID=~1), data=ring.data, na.action=na.omit)
+
+# Saving the GAMM From above so we can load it without having to refit it
+save(m1, file="GapFilling_gamm_valles_02.2015.rData")
 
 # This isn't a great way of doing it, but it'll let you see the splines for each of the cores
 par(mfrow=c(4,5), mar=c(2,2,0,0)+0.1)
@@ -119,10 +136,6 @@ par(new=F)
 
 plot(RW.modeled ~ RW, pch=19, xlim=c(0,1), ylim=c(0,1), data=ring.data)
 abline(a=0, b=1, col="red")
-
-
-# Saving the GAMM From above so we can load it without having to refit it
-save(m1, file="GapFilling_gamm_mmf_2015.01.rData")
 
 
 ############
